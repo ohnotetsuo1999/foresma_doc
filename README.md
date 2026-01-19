@@ -8,7 +8,7 @@ foresma社の営業資料・マーケティング知見を、**マーケター�
 
 ## ディレクトリ構成
 - `docs/`: 社内ドキュメント（Markdown中心）
-- `slides/`: スライド原稿（Markdown中心）
+  - `docs/by-user/{user}/{YYYY-MM-DD}/`: 作成者別・日別の資料置き場
 
 ## 運用ルール
 - Cursorのプロジェクトルールは `.cursor/rules/foresma_marketer.md` を参照します。
