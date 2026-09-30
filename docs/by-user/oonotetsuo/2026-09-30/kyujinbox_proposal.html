@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<title>求人ボックス様 ご提案資料</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+@page { size: 10in 5.625in; margin: 0; }
+:root{ --main:#1A3D2E; --acc:#0E6E55; --bg2:#F8F8F6; --eb:#5A6271; --ft:#9AA0A6; --tx:#2B2F33; --line:#D9DDD8; --tint:#E8F1ED; }
+*{ box-sizing:border-box; margin:0; padding:0; }
+body{ font-family:"Noto Sans JP","IPAGothic",sans-serif; color:var(--tx); background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.num{ font-family:"Inter","Noto Sans JP",sans-serif; }
+.slide{ width:10in; height:5.625in; position:relative; overflow:hidden; page-break-after:always; background:#fff; }
+.eyebrow{ position:absolute; left:.6in; top:.4in; width:6in; height:.26in; font-size:10pt; font-weight:700; color:var(--eb); letter-spacing:.04em; }
+.title{ position:absolute; left:.6in; top:.7in; width:9.2in; height:.55in; font-size:22pt; font-weight:700; color:var(--main); white-space:nowrap; line-height:1.3; }
+.fline{ position:absolute; left:.6in; top:5.25in; width:8.8in; border-top:1px solid var(--line); }
+.fl{ position:absolute; left:.6in; top:5.34in; width:6in; height:.22in; font-size:8pt; color:var(--ft); }
+.fr{ position:absolute; left:8in; top:5.34in; width:1.4in; height:.22in; font-size:8pt; color:var(--ft); text-align:right; }
+.body{ position:absolute; left:.6in; top:1.4in; width:8.8in; height:3.7in; font-size:10.5pt; line-height:1.65; }
+.lead{ font-size:11pt; color:var(--tx); margin-bottom:.14in; }
+.ph{ background:#FFF4D6; padding:0 3px; border-radius:2px; }
+.card{ border:1px solid var(--line); border-radius:4px; padding:.14in .16in; background:#fff; }
+.card h3{ font-size:11pt; color:var(--main); margin-bottom:.05in; }
+.card p, .card li{ font-size:9.5pt; line-height:1.6; }
+.tag{ display:inline-block; font-size:8pt; font-weight:700; color:var(--acc); border:1px solid var(--acc); border-radius:2px; padding:0 5px; margin-bottom:.05in; }
+ul{ padding-left:1.1em; }
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:.18in; }
+.grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:.16in; }
+.note{ font-size:7.5pt; color:var(--ft); margin-top:.08in; }
+.msg{ background:var(--main); color:#fff; border-radius:4px; padding:.1in .18in; font-size:10.5pt; font-weight:700; }
+.msg b{ color:#BFE3D4; }
+/* flow */
+.flow{ display:flex; align-items:stretch; gap:0; }
+.step{ flex:1; border:1px solid var(--line); border-radius:4px; padding:.1in .12in; background:#fff; }
+.step .n{ font-family:Inter; font-size:8pt; font-weight:700; color:var(--acc); }
+.step h4{ font-size:10pt; color:var(--main); margin:.02in 0 .04in; line-height:1.4; }
+.step p{ font-size:8.5pt; line-height:1.55; }
+.step.hl{ background:var(--tint); border-color:var(--acc); }
+.arr{ width:.24in; display:flex; align-items:center; justify-content:center; color:var(--acc); font-size:12pt; }
+table{ border-collapse:collapse; width:100%; font-size:9.5pt; }
+th, td{ border-bottom:1px solid var(--line); padding:.07in .1in; text-align:left; vertical-align:top; line-height:1.5; }
+th{ color:var(--eb); font-size:8.5pt; font-weight:700; background:var(--bg2); }
+td.k{ color:var(--main); font-weight:700; width:1.5in; }
+td.us{ background:var(--tint); }
+/* cover */
+.cover{ background:var(--main); color:#fff; }
+.cover .band{ position:absolute; left:.6in; top:1.35in; width:.5in; border-top:3px solid #7FBFA6; }
+.cover .to{ position:absolute; left:.6in; top:.6in; font-size:11pt; color:#CFE3DA; }
+.cover .t1{ position:absolute; left:.6in; top:1.55in; font-size:13pt; color:#CFE3DA; font-weight:500; }
+.cover .t2{ position:absolute; left:.6in; top:1.95in; width:8.8in; font-size:26pt; font-weight:700; line-height:1.45; }
+.cover .t3{ position:absolute; left:.6in; top:3.45in; font-size:11pt; color:#E3EEE9; }
+.cover .co{ position:absolute; left:.6in; top:4.55in; font-size:10pt; color:#CFE3DA; line-height:1.7; }
+.cover .dt{ position:absolute; right:.6in; top:4.75in; font-size:9pt; color:#CFE3DA; }
+/* bars */
+.bar{ height:.26in; display:flex; border-radius:3px; overflow:hidden; font-size:8.5pt; font-weight:700; }
+.bar div{ display:flex; align-items:center; padding-left:.08in; }
+.phase{ display:grid; grid-template-columns:1.3in 1fr; border-bottom:1px solid var(--line); padding:.08in 0; }
+.phase .p{ font-weight:700; color:var(--main); font-size:10pt; }
+.phase .p span{ display:block; font-size:8pt; color:var(--eb); font-weight:400; }
+.phase .d{ font-size:9.5pt; line-height:1.6; }
+</style></head><body>
+
+<!-- 1 Cover -->
+<section class="slide cover">
+  <div class="to">株式会社カカクコム　求人ボックス ご担当者様</div>
+  <div class="band"></div>
+  <div class="t1">ご提案資料</div>
+  <div class="t2">面談起点の「応募送客」による<br>求人ボックス掲載求人ご紹介のご提案</div>
+  <div class="t3">人材紹介では支援しきれない求職者を、求人ボックスの求人へ</div>
+  <div class="co">foresma株式会社<br>代表取締役　大野 哲央</div>
+  <div class="dt num">2026.10</div>
+</section>
+
+<!-- 2 Service -->
+<section class="slide">
+  <div class="eyebrow">01　弊社サービスについて</div>
+  <div class="title">「出会えるエージェント」は面談を起点にした送客サービスです</div>
+  <div class="body">
+    <p class="lead">LINEで集客した求職者全員に、弊社担当者が1対1のオンライン事前面談を実施。ニーズを把握したうえで、合う人材紹介会社を個別にご案内しています。</p>
+    <div class="flow">
+      <div class="step"><div class="n">STEP 1</div><h4>集客・LINE登録</h4><p>Web広告等から流入し、LINEで希望条件を登録</p></div>
+      <div class="arr">›</div>
+      <div class="step hl"><div class="n">STEP 2</div><h4>1対1の事前面談</h4><p>弊社担当者がオンラインで希望職種・エリア・転職時期・経歴をヒアリング</p></div>
+      <div class="arr">›</div>
+      <div class="step"><div class="n">STEP 3</div><h4>個別マッチング</h4><p>ヒアリング内容から、合う人材紹介会社を担当者が選定</p></div>
+      <div class="arr">›</div>
+      <div class="step"><div class="n">STEP 4</div><h4>紹介会社へ送客</h4><p>紹介会社の面談に着座した時点で成果（紹介会社様から報酬）</p></div>
+    </div>
+    <div class="grid3" style="margin-top:.2in;">
+      <div class="card"><div class="tag">面談実施数</div><p><span class="num ph" style="font-size:16pt;font-weight:700;color:var(--main);">●●</span> 名／月</p></div>
+      <div class="card"><div class="tag">求職者層</div><p><span class="ph">20代中心／●●志望が多い</span></p></div>
+      <div class="card"><div class="tag">強み</div><p>全員と人が話しているため、<b>意向・条件・温度感</b>を把握したうえでご案内できる</p></div>
+    </div>
+    <p class="note">※ 数値は弊社実績（2026年●月時点）。黄色箇所は確定値に差し替え予定。</p>
+  </div>
+  <div class="fline"></div><div class="fl">foresma株式会社｜Confidential</div><div class="fr num">2</div>
+</section>
+
+<!-- 3 Issue -->
+<section class="slide">
+  <div class="eyebrow">02　弊社の課題</div>
+  <div class="title">意欲があっても紹介会社にご案内できない方が一定数います</div>
+  <div class="body">
+    <p class="lead">人材紹介は企業への推薦が前提のため、受け入れ基準に合わない求職者は、意欲があってもご案内先がありません。</p>
+    <div class="grid2" style="grid-template-columns:1.15fr 1fr;">
+      <div>
+        <div style="font-size:9pt;font-weight:700;color:var(--eb);margin-bottom:.06in;">面談実施者の内訳（イメージ）</div>
+        <div class="bar"><div style="width:70%;background:var(--main);color:#fff;"><span class="num ph" style="background:none;color:#fff;">約●●%</span>&nbsp;紹介会社へ送客</div><div style="width:30%;background:#C9D6CF;color:var(--main);"><span class="num">約●●%</span>&nbsp;送客不可</div></div>
+        <p class="note" style="margin-top:.04in;">※ 比率はイメージ。実数値は面談データより算出して差し替え。</p>
+        <div class="card" style="margin-top:.14in;">
+          <h3>ご案内が難しくなる主なケース</h3>
+          <ul>
+            <li><b>経歴面</b>：起業・フリーランス歴が中心で会社員経験が浅い、短期離職が続いている、ブランクが長い 等</li>
+            <li><b>就業制限</b>：勤務時間・曜日・勤務地の制約、健康面の配慮、在留資格による就労制限 等</li>
+            <li><b>条件面</b>：年齢・希望職種の組み合わせで、紹介会社の取扱い求人と合わない 等</li>
+          </ul>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.12in;">
+        <div class="card" style="background:var(--bg2);">
+          <h3>こうした方々の実態</h3>
+          <ul>
+            <li>働く意欲・転職時期は明確</li>
+            <li>希望職種・エリア・条件は面談で把握済み</li>
+            <li>「推薦」ではなく<b>自分で応募できる求人</b>なら選択肢がある</li>
+          </ul>
+        </div>
+        <div class="msg">現状はご案内先がなく、<b>面談で得たニーズが活かされていない</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="fline"></div><div class="fl">foresma株式会社｜Confidential</div><div class="fr num">3</div>
+</section>
+
+<!-- 4 Proposal -->
+<section class="slide">
+  <div class="eyebrow">03　ご提案内容</div>
+  <div class="title">面談で把握したニーズに合う求人を、担当者が個別にご紹介</div>
+  <div class="body">
+    <div class="flow">
+      <div class="step"><div class="n">01</div><h4>事前面談</h4><p>希望職種・エリア・時期・経歴・就業制限をヒアリング</p></div>
+      <div class="arr">›</div>
+      <div class="step hl"><div class="n">02</div><h4>求人の個別紹介</h4><p>求人ボックス掲載求人から条件に合うものを担当者が絞り込み、LINEでご案内</p></div>
+      <div class="arr">›</div>
+      <div class="step"><div class="n">03</div><h4>求職者が応募</h4><p>弊社専用の計測パラメータ付きURL（またはAPI）経由で応募</p></div>
+      <div class="arr">›</div>
+      <div class="step"><div class="n">04</div><h4>計測・精算</h4><p>貴社側で弊社経由の応募数を計測し、応募単価でご精算</p></div>
+    </div>
+    <div style="font-size:9pt;font-weight:700;color:var(--eb);margin:.2in 0 .06in;">貴社にとってのメリット</div>
+    <div class="grid3">
+      <div class="card"><h3>応募率・応募の質</h3><p>人が条件を絞ってから紹介するため、クリック後の応募率が高く、ミスマッチの少ない応募が見込めます。</p></div>
+      <div class="card"><h3>新しい応募者層</h3><p>検索だけでは応募に至りにくい層（自分で求人を選びきれない方など）に、人の介在で応募まで届けます。</p></div>
+      <div class="card"><h3>掲載企業様への価値</h3><p>意向確認済みの応募が増えることで、求人ボックス掲載企業様の採用成果に貢献します。</p></div>
+    </div>
+  </div>
+  <div class="fline"></div><div class="fl">foresma株式会社｜Confidential</div><div class="fr num">4</div>
+</section>
+
+<!-- 5 Billing -->
+<section class="slide">
+  <div class="eyebrow">04　成果地点のご相談</div>
+  <div class="title">弊社の送客形態には、クリック課金より応募課金が実態に合います</div>
+  <div class="body">
+    <p class="lead">弊社はサイト上に求人を並べるメディア型ではなく、人が介在して求人を絞り込む形です。クリック数は多くない一方、応募率・応募の質は高くなる見込みです。</p>
+    <table>
+      <tr><th></th><th>クリック課金（現行パブリッシャープログラム）</th><th style="background:var(--tint);color:var(--acc);">応募課金（ご提案）</th></tr>
+      <tr><td class="k">想定する送客形態</td><td>メディアに求人を掲載し、多数のクリックを集める</td><td class="us">面談後に少数の求人を個別紹介し、応募まで後押し</td></tr>
+      <tr><td class="k">クリック数</td><td>多い</td><td class="us">少ない（紹介を絞るため）</td></tr>
+      <tr><td class="k">応募率・質</td><td>ばらつきが大きい</td><td class="us">高い見込み（意向・条件を確認済み）</td></tr>
+      <tr><td class="k">貴社の費用対効果</td><td>応募に至らないクリックにも費用が発生</td><td class="us">応募が発生した分のみのご負担</td></tr>
+    </table>
+    <div class="msg" style="margin-top:.16in;">既存プログラムの枠内が難しい場合は、<b>クリック課金での参加を前提に、応募ベースの条件を別途ご相談</b>させてください</div>
+  </div>
+  <div class="fline"></div><div class="fl">foresma株式会社｜Confidential</div><div class="fr num">5</div>
+</section>
+
+<!-- 6 Next steps -->
+<section class="slide">
+  <div class="eyebrow">05　進め方（案）</div>
+  <div class="title">まずは職種・エリアを絞った1〜2か月の小規模テストから</div>
+  <div class="body">
+    <div class="grid2" style="grid-template-columns:1.35fr 1fr;">
+      <div>
+        <div class="phase"><div class="p">STEP 1<span>準備（約2〜4週間）</span></div><div class="d">条件のすり合わせ（成果地点・単価）、計測方法の決定（パラメータ付きURL／API）、対象職種・エリアの選定</div></div>
+        <div class="phase"><div class="p">STEP 2<span>テスト（1〜2か月）</span></div><div class="d">対象を絞って求人紹介を開始。紹介数・クリック数・応募数・応募率を週次で共有</div></div>
+        <div class="phase" style="border-bottom:none;"><div class="p">STEP 3<span>振り返り・拡大</span></div><div class="d">テスト結果をもとに、単価・対象範囲・本格展開の可否をご判断いただく</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.12in;">
+        <div class="card" style="background:var(--bg2);">
+          <h3>本日ご相談したいこと</h3>
+          <ul>
+            <li>応募課金（または応募ベースの条件）の可否</li>
+            <li>弊社経由応募の計測方法</li>
+            <li>テスト対象として適した職種・エリア</li>
+            <li>今後の検討スケジュール・ご担当窓口</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>お問い合わせ</h3>
+          <p>foresma株式会社　代表取締役 大野 哲央<br><span class="num">ohnotetsuo@foresma.jp</span><br><span class="num">https://foresma.jp/ ／ https://lreach.jp/</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="fline"></div><div class="fl">foresma株式会社｜Confidential</div><div class="fr num">6</div>
+</section>
+
+</body></html>
