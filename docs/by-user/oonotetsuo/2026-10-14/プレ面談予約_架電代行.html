@@ -267,6 +267,8 @@ code.sql{display:block;white-space:pre-wrap;word-break:break-all;font-family:var
 .cal .cc:not(:disabled):not(.none):hover{outline:2px solid var(--accent);outline-offset:-2px}
 td.memo{white-space:normal;min-width:180px;max-width:320px;font-size:12px;color:var(--muted)}
 .seg button:disabled{opacity:.6;cursor:not-allowed}
+.hubsteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.hubsteps li{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 </style>
 <header class="top">
   <div class="top-in">
@@ -478,6 +480,7 @@ const FORMS = { "電話": {id:"787091ef-2a77-435a-ac5a-edd2ac51ac1c", name:"出�
                 "オンライン": {id:"35c8040f-b366-4749-80e8-d8b01ba96389", name:"出会えるエージェント エージェント相談(オンライン面談)", reminder:9, label:"オンライン面談"} };
 const HUB_TAG = "架電代行_スイッチ";
 const STATUS = {null:"日程確定", 7:"面談日程調整中", 10:"再面談日程調整中", 11:"再面談日程確定", 12:"面談実施", 13:"面談未実施"};
+const MEET_MIN = 15;  /* 出会えるエージェントの予約フォームと同じ面談時間 */
 const SLOT_MIN = 30, OPEN_H = 9, CLOSE_H = 23, LEAD_MIN = 30, HOLD_SEC = 300, DAYS = 7;
 const WD = ["日","月","火","水","木","金","土"];
 const STORE = "preint-desk-v3";
@@ -520,7 +523,7 @@ const data = {
   slots: {},                 // key -> {available, staff:[names]}
   slotsAt: null,
   staff: [],                 // [{id,name,priority}]
-  hubList: null, hubListErr: null,
+  hubList: null, hubListErr: null, hubWrite: null,
   error: null
 };
 const st = { logs: ls.get("logs", []), drafts: ls.get("drafts", []), lineUrl: ls.get("lineUrl", ""), holds: [] };
@@ -578,7 +581,7 @@ const uuidOrNull = v => isUuid(v) ? sqlStr(v)+"::uuid" : "null";
 const tsOrNull = v => v ? sqlStr(new Date(v).toISOString())+"::timestamptz" : "null";
 function rowToBooking(r){
   return { id:r.id, userId:r.hub_user_id, start:new Date(r.start_at).toISOString(), method:r.method, staff:r.staff_name||"", staffId:r.staff_id||null,
-    by:r.booked_by, createdAt:r.created_at, verifyNote:r.verify_note||"", notice:r.notice||"LINE", hubStatus:r.hub_status,
+    by:r.booked_by, createdAt:r.created_at, verifyNote:r.verify_note||"", notice:r.notice||"LINE", hubStatus:r.hub_status, hubBookingId:r.hub_booking_id||null,
     u:{id:r.hub_user_id, name:r.user_name, phone:r.phone||""}, lineUid:r.line_uid||"",
     fmt: typeof r.fmt==="string" ? JSON.parse(r.fmt||"{}") : (r.fmt||{}), tossed:!!r.tossed, tossedAt:r.tossed_at, tossedBy:r.tossed_by };
 }
@@ -588,7 +591,7 @@ function rowToLog(r){
 }
 const SQ = {
   check: `select to_regclass('public.desk_bookings') is not null b, to_regclass('public.desk_call_logs') is not null l, to_regclass('public.desk_slot_holds') is not null h, to_regclass('public.desk_settings') is not null s`,
-  bookings: `select id::text, hub_user_id, user_name, phone, line_uid, start_at, method, staff_name, staff_id::text, booked_by, verify_note, notice, hub_status, fmt, tossed, tossed_at, tossed_by, created_at from desk_bookings where hub_status<>'canceled' and (start_at > now() - interval '14 days' or not tossed) order by start_at limit 300`,
+  bookings: `select id::text, hub_user_id, user_name, phone, line_uid, start_at, method, staff_name, staff_id::text, booked_by, verify_note, notice, hub_status, hub_booking_id::text, fmt, tossed, tossed_at, tossed_by, created_at from desk_bookings where hub_status<>'canceled' and (start_at > now() - interval '14 days' or not tossed) order by start_at limit 300`,
   logs: `select id::text, hub_user_id, user_name, phone, outcome, call_state, contact_pref, memo, callback_at, done, logged_by, created_at from desk_call_logs where created_at > now() - interval '60 days' or (outcome='再電話' and not done) order by created_at desc limit 500`,
   holds: `select id::text, slot_start, held_by, hub_user_id, expires_at from desk_slot_holds where expires_at > now()`,
   settings: `select key, value from desk_settings`
@@ -626,8 +629,8 @@ function saveLocal(){ ls.set("drafts", st.drafts); ls.set("logs", st.logs); ls.s
 async function persistBooking(b){
   if (store.mode==="supabase"){
     try {
-      const r = await write(`insert into desk_bookings (hub_user_id, user_name, phone, line_uid, start_at, method, staff_name, staff_id, booked_by, verify_note, notice, fmt, tossed, tossed_at, tossed_by)
- values (${sqlStr(b.u.id)}, ${sqlStr(b.u.name)}, ${sqlStr(b.u.phone)}, ${sqlStr(b.lineUid||"")}, ${tsOrNull(b.start)}, ${sqlStr(b.method)}, ${sqlStr(b.staff)}, ${uuidOrNull(b.staffId)}, ${sqlStr(b.by)}, ${sqlStr(b.verifyNote)}, ${sqlStr(b.notice)}, ${sqlStr(JSON.stringify(b.fmt))}::jsonb, ${b.tossed}, ${b.tossed ? "now()" : "null"}, ${b.tossed ? sqlStr(b.by) : "null"}) returning id::text`);
+      const r = await write(`insert into desk_bookings (hub_user_id, user_name, phone, line_uid, start_at, method, staff_name, staff_id, booked_by, verify_note, notice, hub_status, hub_booking_id, fmt, tossed, tossed_at, tossed_by)
+ values (${sqlStr(b.u.id)}, ${sqlStr(b.u.name)}, ${sqlStr(b.u.phone)}, ${sqlStr(b.lineUid||"")}, ${tsOrNull(b.start)}, ${sqlStr(b.method)}, ${sqlStr(b.staff)}, ${uuidOrNull(b.staffId)}, ${sqlStr(b.by)}, ${sqlStr(b.verifyNote)}, ${sqlStr(b.notice)}, ${sqlStr(b.hubStatus||"draft")}, ${uuidOrNull(b.hubBookingId)}, ${sqlStr(JSON.stringify(b.fmt))}::jsonb, ${b.tossed}, ${b.tossed ? "now()" : "null"}, ${b.tossed ? sqlStr(b.by) : "null"}) returning id::text`);
       if (r && r[0]) b.id = r[0].id;
       await write(`update desk_call_logs set done=true where hub_user_id=${sqlStr(b.u.id)} and outcome='再電話' and not done`);
       return true;
@@ -753,7 +756,7 @@ function renderConn(){
     t.textContent = "Hub接続中";
     b.className = "banner live";
     b.innerHTML = '<span><b>LREACH Hub の実データで表示しています。</b>空き枠は '+(data.slotsAt ? fmtD(data.slotsAt)+" "+fmtT(data.slotsAt) : "-")+' 時点（Hubが5分ごとに計算）。</span><button class="linkbtn" id="slots-reload">空き枠を更新</button>'+
-      '<span>予約確定・SMS送信はまだHubに書き込まず、送る内容と登録内容の確認までです。</span>'+storeHtml()+settingsHtml();
+      '<span>予約を確定すると Hub の interview_bookings に登録されます（IS割当・確定メッセージはHubが自動で行います）。</span>'+storeHtml()+settingsHtml();
   } else if (data.mode==="demo"){
     t.textContent = "デモデータ";
     b.className = "banner";
@@ -777,7 +780,7 @@ function capacity(t){
   if (!s) return {n:0, past:false, staff:[]};
   let n = s.available;
   const iso = t.toISOString(), now = Date.now();
-  n -= st.drafts.filter(b => b.start===iso && (b.hubStatus||"draft")==="draft").length;
+  n -= st.drafts.filter(b => b.start===iso && ((b.hubStatus||"draft")==="draft" || (b.hubStatus==="registered" && data.slotsAt && new Date(b.createdAt) > data.slotsAt))).length;
   n -= st.holds.filter(h => h.start===iso && h.expires > now && h.by !== operator()).length;
   return {n:Math.max(0,n), past:false, staff:s.staff};
 }
@@ -1083,8 +1086,9 @@ function renderFmt(){
     else if (!verified()) gate = "STEP 2の本人確認が完了していません。";
     else if (!ui.sel) gate = "STEP 3で枠を仮押さえしてください。";
     else if (!F("name").value.trim()) gate = "名前を入れてください。";
-    $("book").textContent = missing.length ? "予約だけ確定する（トスアップは後で）" : "予約を確定してトスアップする";
-    $("fmt-gate").textContent = gate || (missing.length ? "トスアップ項目が未入力でも予約できます。未入力："+missing.join("・")+"。あとで「トスアップ待ち」から入れてください。" : "予約すると、LINE予約と同じ確定メッセージがユーザーに届き、Hubに登録されます。");
+    const confirming = data.mode==="live" && u && ui.sel && ui.confirmKey === ui.sel+"|"+u.id;
+    $("book").textContent = confirming ? "Hubに登録する（もう一度押して確定）" : missing.length ? "予約だけ確定する（トスアップは後で）" : "予約を確定してトスアップする";
+    $("fmt-gate").textContent = gate || (confirming ? "Hubの interview_bookings に「"+hubTitle({method:ui.method}, {name:F("name").value.trim()})+"」として登録します。ユーザーにはLINE予約と同じ確定メッセージが届き、ISはHubが自動で割り当てます。" : missing.length ? "トスアップ項目が未入力でも予約できます。未入力："+missing.join("・")+"。あとで「トスアップ待ち」から入れてください。" : "予約すると、LINE予約と同じ確定メッセージがユーザーに届き、Hubに登録されます。");
   }
   $("book").disabled = !!gate;
   document.querySelectorAll("#method button").forEach(b => { b.setAttribute("aria-pressed", String(b.dataset.v===(tf ? tf.method : ui.method))); b.disabled = !!tf; });
@@ -1094,10 +1098,41 @@ function pickStaff(t){
   const cand = data.staff.filter(s => names.includes(s.name)).sort((a,b) => a.priority-b.priority);
   return cand[0] || (names[0] ? {id:null, name:names[0]} : null);
 }
+function hubTitle(b, u){ return "【"+(b.method==="電話" ? "電話面談" : "オンライン面談")+"】"+u.name+"様　出会えるエージェント"; }
 function insertSql(b, u){
-  const f = FORMS[b.method], start = new Date(b.start), end = addMin(start, SLOT_MIN);
-  return "insert into interview_bookings\n  (booker_name, title, start_at, end_at, line_user_id, users_id, form_id, reminder_type_id, tag, is_staff_id, appointment_getter_id, memo)\nvalues\n  ("+
-    [sqlStr(u.name), sqlStr(f.name), sqlStr(start.toISOString()), sqlStr(end.toISOString()), sqlStr(u.lineUid||""), u.id && isUuid(u.id) ? sqlStr(u.id) : "null", sqlStr(f.id), f.reminder, sqlStr(HUB_TAG), b.staffId ? sqlStr(b.staffId) : "null", sqlStr(SWITCH_STAFF_ID), sqlStr("架電代行："+b.by+(b.verifyNote?"／本人確認："+b.verifyNote:""))].join(", ")+");";
+  const f = FORMS[b.method], start = new Date(b.start), end = addMin(start, MEET_MIN);
+  return "insert into interview_bookings\n  (booker_name, title, start_at, end_at, line_user_id, users_id, form_id, reminder_type_id, tag, appointment_getter_id, memo)\nvalues\n  ("+
+    [sqlStr(u.name), sqlStr(hubTitle(b,u)), sqlStr(start.toISOString())+"::timestamptz", sqlStr(end.toISOString())+"::timestamptz", u.lineUid ? sqlStr(u.lineUid) : "null", isUuid(u.id) ? sqlStr(u.id)+"::uuid" : "null",
+     sqlStr(f.id)+"::uuid", f.reminder, sqlStr(HUB_TAG), sqlStr(SWITCH_STAFF_ID)+"::uuid", sqlStr("架電代行："+b.by+(b.verifyNote?"／本人確認："+b.verifyNote:""))].join(", ")+")\nreturning id::text;";
+}
+/* Hub の interview_bookings に登録。IS担当はHubの自動割当に任せる */
+async function hubInsert(b, u){
+  if (data.mode!=="live") return {ok:false, demo:true};
+  try { const r = await sql(HUB, insertSql(b,u)); return r && r[0] ? {ok:true, id:r[0].id} : {ok:false, reason:"登録結果を読み取れませんでした"}; }
+  catch(e){
+    const m = String(e && e.message || "");
+    if (/上限|予約できません|23514/.test(m)) return {ok:false, full:true, reason:"この枠はHub上で満席になりました"};
+    if (/read-only|read only/i.test(m)) return {ok:false, readonly:true, reason:"Supabaseコネクタが読み取り専用のため、Hubに登録できませんでした"};
+    return {ok:false, reason:errText(e)};
+  }
+}
+/* 登録後、Hub側の自動処理（IS割当・カレンダー・面談URL・確定メッセージ）が終わったかを追いかける */
+async function watchHub(b){
+  if (data.mode!=="live" || !isUuid(b.hubBookingId)) return;
+  const q = `select s.name staff, b.is_staff_id is not null assigned, b.google_calendar_event_id is not null gcal, b.meeting_url is not null url,
+ exists(select 1 from interview_booking_reminders r where r.interview_booking_id=b.id and r.reminder_timing='on_booking') sent, b.is_canceled
+ from interview_bookings b left join is_staff s on s.id=b.is_staff_id where b.id=${sqlStr(b.hubBookingId)}::uuid`;
+  const started = Date.now();
+  b.hubWatch = {state:"watching"};
+  while (Date.now() - started < 90000){
+    try { const r = (await sql(HUB, q))[0]; if (r){ b.hubWatch = Object.assign({state:"watching"}, r); if (r.staff) b.staff = r.staff; } } catch(e){}
+    if (ui.done && ui.done.booking===b) renderDone();
+    const w = b.hubWatch; if (w.assigned && w.sent && w.gcal && (b.method==="電話" || w.url)) break;
+    await new Promise(res => setTimeout(res, 6000));
+  }
+  b.hubWatch.state = "done";
+  if (b.staff && store.mode==="supabase" && isUuid(b.id)) write(`update desk_bookings set staff_name=${sqlStr(b.staff)}, updated_at=now() where id=${sqlStr(b.id)}::uuid`).catch(()=>{});
+  if (ui.done && ui.done.booking===b) renderDone();
 }
 async function book(e){
   e.preventDefault();
@@ -1106,20 +1141,24 @@ async function book(e){
   const u = ui.user; if (!u || !verified() || !ui.sel || !F("name").value.trim()) return;
   const t = new Date(ui.sel);
   if (capacity(t).n <= 0){ toast("この枠は直前に埋まりました。ほかの枠を選んでください。"); releaseHold(); return; }
-  const staff = pickStaff(t);
-  const b = {id:"draft-"+Date.now().toString(36), userId:u.id, start:t.toISOString(), method:ui.method, staff: staff ? staff.name : "", staffId: staff ? staff.id : null,
+  if (data.mode==="live" && ui.confirmKey !== ui.sel+"|"+u.id){ ui.confirmKey = ui.sel+"|"+u.id; renderFmt(); return; }
+  const b = {id:"draft-"+Date.now().toString(36), userId:u.id, start:t.toISOString(), method:ui.method, staff:"", staffId:null,
     by:operator(), createdAt:new Date().toISOString(), verifyNote: ui.mismatch ? ui.mismatchReason.trim() : "", notice: (u.blocked || !u.lineAdded) ? "SMS" : "LINE",
     u:{id:u.id, name:u.name, phone:u.phone}, lineUid:u.lineUid||"", hubStatus:"draft", fmt:getFmt(), tossed: fmtMissing().length===0, tossedAt: fmtMissing().length===0 ? new Date().toISOString() : null};
-  book.busy = true; $("book").disabled = true; $("book").textContent = "保存しています…";
+  book.busy = true; $("book").disabled = true; $("book").textContent = "Hubに登録しています…";
+  const h = await hubInsert(b, u);
+  if (h.full){ book.busy = false; ui.confirmKey = null; toast(h.reason+"。ほかの枠を選んでください。"); try { await reloadSlots(); } catch(e){} releaseHold(); return; }
+  if (h.ok){ b.hubStatus = "registered"; b.hubBookingId = h.id; } else { b.hubStatus = "draft"; b.hubError = h.demo ? "デモデータのためHubには登録していません。" : h.reason; }
   st.logs.forEach(l => { if (l.u && l.u.id===u.id && l.type==="再電話") l.done = true; });
   st.drafts.push(b);
   await persistBooking(b);
-  book.busy = false;
+  book.busy = false; ui.confirmKey = null;
+  if (h.ok) watchHub(b);
   if (ui.hold && ui.hold.id) releaseHoldRow(ui.hold.id);
   ui.done = {booking:b, user:u, slack:slackFmt(b,u.phone), sql:insertSql(b,u)};
   ui.hold = null; ui.sel = null;
   renderAll();
-  toast(b.tossed ? "予約を確定し、トスアップ文面を作りました（試作のためHubへの書き込みはまだ行いません）" : "予約を確定しました。トスアップは「トスアップ待ち」からあとで入れられます");
+  toast(h.ok ? "Hubにプレ面談を登録しました" + (b.tossed ? "。トスアップ文面もできています" : "。トスアップはあとからでも入れられます") : "Hubに登録できなかったため、予約内容を保存しました（"+(b.hubError||"")+"）");
 }
 function slackFmt(b, phone){
   const t = new Date(b.start), f = b.fmt || getFmt(), v = k => String(f[k]||"").trim();
@@ -1178,18 +1217,27 @@ function renderDone(){
       '<pre class="out" id="done-text">'+esc(ui.done.slack)+'</pre><div class="row"><span class="hint" style="flex:1 1 200px">#調整-foresma-スイッチ に貼り付けてください。</span><button type="button" class="btn flex0" id="copy-done">文面をコピー</button><button type="button" class="btn primary flex0" id="next-call">閉じる</button></div></div>';
     return;
   }
-  el.innerHTML = '<div class="done"><h3>予約内容を確定しました</h3>'+
-    '<dl class="kv"><dt>ユーザー</dt><dd>'+esc(u.name)+'</dd><dt>日時</dt><dd class="mono">'+dayFull(t)+' '+fmtT(t)+'</dd><dt>方法</dt><dd>'+esc(f.label)+'</dd><dt>担当IS</dt><dd>'+esc(b.staff||"Hubで自動割当")+'</dd></dl>'+
+  const reg = b.hubStatus==="registered", w = b.hubWatch || {};
+  const chk = (ok, label, wait) => '<li><span class="pill '+(ok ? "ok" : w.state==="done" ? "warn" : "")+'">'+(ok ? "済" : w.state==="done" ? "未" : "待機中")+'</span> '+label+(ok || w.state!=="done" ? "" : '<span class="hint">　'+wait+'</span>')+'</li>';
+  const steps = reg ? '<ul class="hubsteps">'+
+      '<li><span class="pill ok">済</span> interview_bookings に登録（予約ID <span class="mono">'+esc(String(b.hubBookingId).slice(0,8))+'…</span>）</li>'+
+      chk(w.assigned, "IS担当の自動割当"+(w.staff ? "：<b>"+esc(w.staff)+"</b>" : ""), "Hubの割当待ち。Slackの割り振りスレッドを確認してください")+
+      chk(w.gcal, "ISのGoogleカレンダーに登録", "IS割当のあとに作られます")+
+      (b.method==="オンライン" ? chk(w.url, "オンライン面談URLの発行", "Hub側で発行されていません") : "")+
+      chk(w.sent || b.notice!=="LINE", b.notice==="LINE" ? "LINEで確定メッセージを送信" : "LINEに届かないためSMSで案内（下）", "Hubから送られていません。Hubの画面から送信してください")+
+    '</ul>' : '<div class="alert warn">Hubには登録されていません：'+esc(b.hubError||"")+'。「トスアップ待ち」の一覧に「Hub未登録」として残ります。</div>';
+  el.innerHTML = '<div class="done"><h3>'+(reg ? "Hubにプレ面談を登録しました" : "予約内容を保存しました（Hub未登録）")+'</h3>'+
+    '<dl class="kv"><dt>ユーザー</dt><dd>'+esc(u.name)+'</dd><dt>日時</dt><dd class="mono">'+dayFull(t)+' '+fmtT(t)+'〜'+fmtT(addMin(t,MEET_MIN))+'</dd><dt>方法</dt><dd>'+esc(f.label)+'</dd><dt>担当IS</dt><dd>'+esc(b.staff||"Hubが自動で割り当て")+'</dd></dl>'+
+    '<div class="card"><div class="cap">Hubでの処理状況'+(reg && w.state!=="done" ? ' <span class="hint">（数秒ごとに確認中）</span>' : '')+'</div>'+steps+'</div>'+
     '<div class="two">'+
-      '<div class="card"><div class="cap">ユーザーに届くメッセージ '+(viaLine ? '<span class="pill ok">公式LINE（LINE予約と同じ）</span>' : '<span class="pill warn">LINEに届かないためSMS</span>')+'</div>'+
+      '<div class="card"><div class="cap">'+(reg ? 'ユーザーに届くメッセージ（Hubから送信）' : 'Hubに登録すると届くメッセージ')+' '+(viaLine ? '<span class="pill ok">公式LINE（LINE予約と同じ）</span>' : '<span class="pill warn">LINEに届かないためSMS</span>')+'</div>'+
         (viaLine ? '<div class="chat">'+flexHtml(b,u)+'<div class="bubble">'+esc(FOLLOW_TEXT)+'</div><details class="sec" style="background:var(--surface);width:100%"><summary>3通目：事前ヒアリングシート</summary><div class="in"><div class="bubble" style="background:var(--sunk)">'+esc(SHEET_TEXT)+'</div></div></details></div>'
           : smsBox({kind:"booked", phone:u.phone, name:u.name, when:jpDate(t)+fmtT(t), how:f.label}))+
       '</div>'+
-      '<div class="card"><div class="cap">LREACH Hub に登録する内容</div>'+
-        '<dl class="kv"><dt>日時</dt><dd class="mono">'+fmtD(t)+' '+fmtT(t)+'〜'+fmtT(addMin(t,SLOT_MIN))+'</dd><dt>予約フォーム</dt><dd>'+esc(f.name)+'</dd><dt>リマインド種別</dt><dd>'+f.reminder+'（LINE予約と同じ）</dd><dt>IS担当</dt><dd>'+esc(b.staff||"Hubで自動割当")+'</dd><dt>アポ取得者</dt><dd>スイッチ（'+esc(b.by)+'）</dd><dt>タグ</dt><dd class="mono">'+HUB_TAG+'</dd>'+(b.verifyNote?'<dt>本人確認メモ</dt><dd>'+esc(b.verifyNote)+'</dd>':'')+'</dl>'+
+      '<div class="card"><div class="cap">'+(reg ? 'interview_bookings に入れた内容' : 'interview_bookings に入れる内容')+'</div>'+
+        '<dl class="kv"><dt>件名</dt><dd>'+esc(hubTitle(b,u))+'</dd><dt>日時</dt><dd class="mono">'+fmtD(t)+' '+fmtT(t)+'〜'+fmtT(addMin(t,MEET_MIN))+'</dd><dt>予約フォーム</dt><dd>'+esc(f.name)+'</dd><dt>リマインド種別</dt><dd>'+f.reminder+'（LINE予約と同じ）</dd><dt>IS担当</dt><dd>空欄で登録 → Hubが自動割当</dd><dt>アポ取得者</dt><dd>スイッチ（メモに '+esc(b.by)+'）</dd><dt>タグ</dt><dd class="mono">'+HUB_TAG+'</dd>'+(b.verifyNote?'<dt>本人確認メモ</dt><dd>'+esc(b.verifyNote)+'</dd>':'')+'</dl>'+
         '<div><div class="hint" style="margin-bottom:4px">このあと自動で届くリマインド（Hubの既存設定）</div><div class="rem">'+(reminderPlan(t).map(([l]) => '<span class="pill">'+l+'</span>').join("") || '<span class="hint">直前の予約のため、リマインドはありません</span>')+'</div></div>'+
-        '<details class="sec"><summary>実行するSQL（確認用）</summary><div class="in"><code class="sql">'+esc(ui.done.sql)+'</code></div></details>'+
-        '<p class="hint" style="color:var(--warn)">試作のため、まだHubには書き込んでいません。Hubの予約API（LINE予約と同じ処理）につなぐと、登録と確定メッセージの送信が同時に行われます。</p>'+
+        '<details class="sec"><summary>'+(reg ? '実行したSQL' : '実行するSQL')+'</summary><div class="in"><code class="sql">'+esc(ui.done.sql)+'</code></div></details>'+
       '</div>'+
     '</div>'+
     (b.tossed ? '<details class="sec" open><summary>トスアップ（Slack用の送客FMT）</summary><div class="in"><pre class="out" id="done-text">'+esc(ui.done.slack)+'</pre><div class="row"><button type="button" class="btn flex0" id="copy-done">文面をコピー</button></div></div></details>'
@@ -1264,12 +1312,12 @@ function renderToss(){
   const c = $("toss-cnt"); c.hidden = !pending; c.textContent = pending;
   $("toss-sub").textContent = "未トスアップ "+pending+"件／全"+rows.length+"件";
   $("toss-body").innerHTML = rows.length ? rows.map(b => { const t = new Date(b.start), u = b.u || {name:"-", phone:""};
-    return '<tr><td class="mono">'+dayFull(t)+' '+fmtT(t)+'</td><td>'+esc(u.name)+'</td><td class="mono">'+esc(fmtPhone(u.phone))+'</td><td>'+esc(b.by)+'</td><td>'+(b.tossed ? '<span class="pill ok">済 '+(b.tossedAt?fmtD(new Date(b.tossedAt))+' '+fmtT(new Date(b.tossedAt)):'')+'</span>' : '<span class="pill warn">未</span>')+'</td><td><button type="button" class="btn sm '+(b.tossed?'':'primary')+'" data-toss="'+esc(b.id)+'">'+(b.tossed?'見直す':'トスアップする')+'</button></td></tr>'; }).join("")
+    return '<tr><td class="mono">'+dayFull(t)+' '+fmtT(t)+'</td><td>'+esc(u.name)+'</td><td class="mono">'+esc(fmtPhone(u.phone))+'</td><td>'+esc(b.by)+((b.hubStatus||"draft")==="draft" ? ' <span class="pill warn">Hub未登録</span>' : '')+'</td><td>'+(b.tossed ? '<span class="pill ok">済 '+(b.tossedAt?fmtD(new Date(b.tossedAt))+' '+fmtT(new Date(b.tossedAt)):'')+'</span>' : '<span class="pill warn">未</span>')+'</td><td><button type="button" class="btn sm '+(b.tossed?'':'primary')+'" data-toss="'+esc(b.id)+'">'+(b.tossed?'見直す':'トスアップする')+'</button></td></tr>'; }).join("")
     : '<tr><td colspan="6"><div class="empty">まだ予約はありません。「架電・予約」で予約すると、ここに並びます。</div></td></tr>';
 }
 function renderList(){
   const body = $("list-body");
-  const drafts = st.drafts.slice().reverse().map(b => '<tr><td class="mono">'+fmtD(new Date(b.start))+' '+fmtT(new Date(b.start))+'</td><td>'+esc((b.u && b.u.name)||"（この画面で作成）")+'</td><td>'+esc(FORMS[b.method].label)+'</td><td>'+esc(b.staff||"-")+'</td><td>スイッチ（'+esc(b.by)+'）</td><td class="mono">'+HUB_TAG+'</td><td><span class="pill warn">Hub未登録</span></td></tr>').join("");
+  const drafts = st.drafts.filter(b => (b.hubStatus||"draft")==="draft").reverse().map(b => '<tr><td class="mono">'+fmtD(new Date(b.start))+' '+fmtT(new Date(b.start))+'</td><td>'+esc((b.u && b.u.name)||"（この画面で作成）")+'</td><td>'+esc(FORMS[b.method].label)+'</td><td>'+esc(b.staff||"-")+'</td><td>スイッチ（'+esc(b.by)+'）</td><td class="mono">'+HUB_TAG+'</td><td><span class="pill warn">Hub未登録</span></td></tr>').join("");
   if (data.mode!=="live"){ body.innerHTML = drafts || '<tr><td colspan="7"><div class="empty">Supabaseにつながると、Hubに登録されているスイッチ経由の予約が表示されます。</div></td></tr>'; return; }
   if (data.hubListErr){ body.innerHTML = drafts + '<tr><td colspan="7"><div class="empty">'+esc(data.hubListErr)+'</div></td></tr>'; return; }
   if (!data.hubList){ body.innerHTML = drafts + '<tr><td colspan="7"><div class="empty">Hubから読み込み中…</div></td></tr>'; return; }

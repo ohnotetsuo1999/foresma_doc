@@ -1,10 +1,11 @@
 -- プレ面談予約デスク：全員で共有する保存先（Supabase / ohno_project = xgfhmyuvdtwbqjtyumre）
 -- Supabase の SQL Editor でこのファイルをそのまま実行してください。
--- Hub（lreach_hub）には何も作りません。Hub のデータは読み取りだけです。
+-- Hub（lreach_hub）にはテーブルを作りません。Hub に書くのは interview_bookings への予約登録だけです。
 
 begin;
 
--- 予約とトスアップ（送客FMT）。hub_status = 'draft' はまだHubに登録していない予約
+-- トスアップ（送客FMT）と予約の控え。予約の正本は Hub の interview_bookings（hub_booking_id で紐づく）。
+-- hub_status = 'registered' は Hub 登録済み、'draft' は Hub に書けなかった予約
 create table if not exists public.desk_bookings (
   id uuid primary key default gen_random_uuid(),
   hub_user_id text,                      -- lreach_hub users.id
