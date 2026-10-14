@@ -523,11 +523,11 @@ const data = {
   hubList: null, hubListErr: null,
   error: null
 };
-const st = { logs: ls.get("logs", []), drafts: ls.get("drafts", []), lineUrl: ls.get("lineUrl", "") };
+const st = { logs: ls.get("logs", []), drafts: ls.get("drafts", []), lineUrl: ls.get("lineUrl", ""), holds: [] };
 const ui = { user:null, hits:[], q:"", searching:false, searchErr:null, confirmed:false, mismatch:false, mismatchReason:"", spoken:"", birthCheck:"",
   tossups:null, slotView:"pick", tossFor:null, band:"all", sel:null, hold:null, method:"電話", outcome:null, done:null, view:"call", sms:null };
 const operator = () => $("operator").value;
-const saveLogs = () => ls.set("logs", st.logs);
+const saveLogs = () => saveLocal();
 
 /* ---------- Supabase（閲覧者のSupabase接続で実行） ---------- */
 let mcp = null;
@@ -572,6 +572,112 @@ const Q = {
   hubList: `select b.id::text id, b.booker_name, b.start_at, b.status_id, b.is_canceled, b.tag, b.reminder_type_id, s.name staff, g.name getter from interview_bookings b left join is_staff s on s.id=b.is_staff_id left join is_staff g on g.id=b.appointment_getter_id where b.appointment_getter_id='${SWITCH_STAFF_ID}' or b.tag ilike '%スイッチ%' order by b.start_at desc limit 50`
 };
 
+/* ---------- 共有ストア（Supabase の desk_* テーブル。無ければこのブラウザ内に保存） ---------- */
+const store = { mode:"local", reason:"", syncedAt:null };
+const uuidOrNull = v => isUuid(v) ? sqlStr(v)+"::uuid" : "null";
+const tsOrNull = v => v ? sqlStr(new Date(v).toISOString())+"::timestamptz" : "null";
+function rowToBooking(r){
+  return { id:r.id, userId:r.hub_user_id, start:new Date(r.start_at).toISOString(), method:r.method, staff:r.staff_name||"", staffId:r.staff_id||null,
+    by:r.booked_by, createdAt:r.created_at, verifyNote:r.verify_note||"", notice:r.notice||"LINE", hubStatus:r.hub_status,
+    u:{id:r.hub_user_id, name:r.user_name, phone:r.phone||""}, lineUid:r.line_uid||"",
+    fmt: typeof r.fmt==="string" ? JSON.parse(r.fmt||"{}") : (r.fmt||{}), tossed:!!r.tossed, tossedAt:r.tossed_at, tossedBy:r.tossed_by };
+}
+function rowToLog(r){
+  return { id:r.id, u:{id:r.hub_user_id, name:r.user_name, phone:r.phone||""}, type:r.outcome, by:r.logged_by, at:r.created_at,
+    state:r.call_state||"", pref:r.contact_pref||"", memo:r.memo||"", callbackAt:r.callback_at, done:!!r.done };
+}
+const SQ = {
+  check: `select to_regclass('public.desk_bookings') is not null b, to_regclass('public.desk_call_logs') is not null l, to_regclass('public.desk_slot_holds') is not null h, to_regclass('public.desk_settings') is not null s`,
+  bookings: `select id::text, hub_user_id, user_name, phone, line_uid, start_at, method, staff_name, staff_id::text, booked_by, verify_note, notice, hub_status, fmt, tossed, tossed_at, tossed_by, created_at from desk_bookings where hub_status<>'canceled' and (start_at > now() - interval '14 days' or not tossed) order by start_at limit 300`,
+  logs: `select id::text, hub_user_id, user_name, phone, outcome, call_state, contact_pref, memo, callback_at, done, logged_by, created_at from desk_call_logs where created_at > now() - interval '60 days' or (outcome='再電話' and not done) order by created_at desc limit 500`,
+  holds: `select id::text, slot_start, held_by, hub_user_id, expires_at from desk_slot_holds where expires_at > now()`,
+  settings: `select key, value from desk_settings`
+};
+async function initStore(){
+  if (data.mode!=="live"){ store.mode = "local"; store.reason = "デモデータのため、このブラウザ内に保存しています。"; return; }
+  try {
+    const c = (await sql(REV, SQ.check))[0] || {};
+    if (!(c.b && c.l && c.h && c.s)){ store.mode = "local"; store.reason = "共有テーブル（desk_*）がまだSupabaseにありません。作成するまでは、このブラウザ内に保存します。"; return; }
+    store.mode = "supabase"; store.reason = "";
+    await loadShared();
+  } catch(e){ store.mode = "local"; store.reason = "共有データを読めませんでした（"+errText(e)+"）。このブラウザ内に保存します。"; }
+}
+async function loadShared(){
+  if (store.mode!=="supabase") return;
+  const [b, l, h, s] = await Promise.all([sql(REV, SQ.bookings), sql(REV, SQ.logs), sql(REV, SQ.holds), sql(REV, SQ.settings)]);
+  st.drafts = b.map(rowToBooking); st.logs = l.map(rowToLog);
+  st.holds = h.map(r => ({id:r.id, start:new Date(r.slot_start).toISOString(), by:r.held_by, userId:r.hub_user_id, expires:new Date(r.expires_at).getTime()}));
+  const lu = s.find(r => r.key==="line_add_url"); st.lineUrl = lu ? (lu.value||"") : "";
+  store.syncedAt = new Date();
+}
+/* 書き込み。失敗（読み取り専用など）したら、このブラウザに残して知らせる */
+async function write(query){
+  if (store.mode!=="supabase") return null;
+  try { return await sql(REV, query); }
+  catch(e){
+    const ro = /read-only|read only/i.test(String(e && e.message));
+    store.mode = "local";
+    store.reason = ro ? "Supabaseコネクタが読み取り専用のため保存できませんでした。書き込みを許可するまで、このブラウザ内に保存します。" : "Supabaseに保存できませんでした（"+errText(e)+"）。このブラウザ内に保存します。";
+    renderConn(); toast(store.reason);
+    throw e;
+  }
+}
+function saveLocal(){ ls.set("drafts", st.drafts); ls.set("logs", st.logs); ls.set("lineUrl", st.lineUrl); }
+async function persistBooking(b){
+  if (store.mode==="supabase"){
+    try {
+      const r = await write(`insert into desk_bookings (hub_user_id, user_name, phone, line_uid, start_at, method, staff_name, staff_id, booked_by, verify_note, notice, fmt, tossed, tossed_at, tossed_by)
+ values (${sqlStr(b.u.id)}, ${sqlStr(b.u.name)}, ${sqlStr(b.u.phone)}, ${sqlStr(b.lineUid||"")}, ${tsOrNull(b.start)}, ${sqlStr(b.method)}, ${sqlStr(b.staff)}, ${uuidOrNull(b.staffId)}, ${sqlStr(b.by)}, ${sqlStr(b.verifyNote)}, ${sqlStr(b.notice)}, ${sqlStr(JSON.stringify(b.fmt))}::jsonb, ${b.tossed}, ${b.tossed ? "now()" : "null"}, ${b.tossed ? sqlStr(b.by) : "null"}) returning id::text`);
+      if (r && r[0]) b.id = r[0].id;
+      await write(`update desk_call_logs set done=true where hub_user_id=${sqlStr(b.u.id)} and outcome='再電話' and not done`);
+      return true;
+    } catch(e){ /* fall through to local */ }
+  }
+  saveLocal(); return false;
+}
+async function persistToss(d){
+  if (store.mode==="supabase" && isUuid(d.id)){
+    try { await write(`update desk_bookings set fmt=${sqlStr(JSON.stringify(d.fmt))}::jsonb, tossed=true, tossed_at=now(), tossed_by=${sqlStr(d.tossedBy)}, updated_at=now() where id=${sqlStr(d.id)}::uuid`); return true; } catch(e){}
+  }
+  saveLocal(); return false;
+}
+async function persistLog(log){
+  if (store.mode==="supabase"){
+    try {
+      if (log.type==="再電話") await write(`update desk_call_logs set done=true where hub_user_id=${sqlStr(log.u.id)} and outcome='再電話' and not done`);
+      const r = await write(`insert into desk_call_logs (hub_user_id, user_name, phone, outcome, call_state, contact_pref, memo, callback_at, logged_by)
+ values (${sqlStr(log.u.id)}, ${sqlStr(log.u.name)}, ${sqlStr(log.u.phone)}, ${sqlStr(log.type)}, ${sqlStr(log.state)}, ${sqlStr(log.pref)}, ${sqlStr(log.memo)}, ${tsOrNull(log.callbackAt)}, ${sqlStr(log.by)}) returning id::text`);
+      if (r && r[0]) log.id = r[0].id;
+      return true;
+    } catch(e){}
+  }
+  saveLocal(); return false;
+}
+async function persistSetting(key, value){
+  if (store.mode==="supabase"){
+    try { await write(`insert into desk_settings (key, value, updated_by, updated_at) values (${sqlStr(key)}, ${sqlStr(value)}, ${sqlStr(operator())}, now()) on conflict (key) do update set value=excluded.value, updated_by=excluded.updated_by, updated_at=now()`); return true; } catch(e){}
+  }
+  saveLocal(); return false;
+}
+/* 仮押さえ：他の担当の押さえと、Hub未登録の予約を差し引いてから押さえる */
+async function acquireHold(t){
+  if (store.mode!=="supabase") return {ok:true};
+  try {
+    const iso = t.toISOString();
+    const r = await write(`with taken as (
+  select (select count(*) from desk_slot_holds where slot_start=${sqlStr(iso)}::timestamptz and expires_at>now() and held_by<>${sqlStr(operator())})
+       + (select count(*) from desk_bookings where start_at=${sqlStr(iso)}::timestamptz and hub_status='draft') n)
+insert into desk_slot_holds (slot_start, held_by, hub_user_id, expires_at)
+select ${sqlStr(iso)}::timestamptz, ${sqlStr(operator())}, ${sqlStr(ui.user ? ui.user.id : "")}, now() + interval '${HOLD_SEC} seconds' from taken where n < ${Number((data.slots[slotKey(t)]||{}).available)||0}
+returning id::text`);
+    return r && r[0] ? {ok:true, id:r[0].id} : {ok:false};
+  } catch(e){ return {ok:true}; }
+}
+async function releaseHoldRow(id){
+  if (store.mode!=="supabase" || !isUuid(id)) return;
+  try { await write(`delete from desk_slot_holds where id=${sqlStr(id)}::uuid or expires_at < now() - interval '1 day'`); } catch(e){}
+}
+
 function mapUser(r){
   const g = String(r.gender||"");
   return { id:r.uid, lineUid:r.line_uid, name:r.name||"（名前未登録）", line:r.line_name||"", phone:r.phone||"",
@@ -611,6 +717,7 @@ async function boot(){
     data.slotsAt = row.calculated_at ? new Date(row.calculated_at) : null;
     data.staff = staffRows.map(r => ({id:r.id, name:r.name, priority:Number(r.priority)}));
     data.mode = "live"; data.error = null;
+    await initStore();
     renderConn(); renderAll(); loadHubList();
   } catch(e){
     data.error = errText(e);
@@ -620,6 +727,7 @@ async function boot(){
 function enterDemo(reason){
   data.mode = "demo"; data.slots = demoSlots(); data.slotsAt = new Date(); data.staff = DEMO_STAFF; data.error = reason;
   $("demo-hints").hidden = false;
+  store.mode = "local"; store.reason = "デモデータのため、このブラウザ内に保存しています。";
   renderConn(); renderAll();
 }
 async function reloadSlots(){
@@ -645,12 +753,17 @@ function renderConn(){
     t.textContent = "Hub接続中";
     b.className = "banner live";
     b.innerHTML = '<span><b>LREACH Hub の実データで表示しています。</b>空き枠は '+(data.slotsAt ? fmtD(data.slotsAt)+" "+fmtT(data.slotsAt) : "-")+' 時点（Hubが5分ごとに計算）。</span><button class="linkbtn" id="slots-reload">空き枠を更新</button>'+
-      '<span>予約確定・SMS送信はまだ本番に書き込まず、送る内容と登録内容の確認までです。</span>'+settingsHtml();
+      '<span>予約確定・SMS送信はまだHubに書き込まず、送る内容と登録内容の確認までです。</span>'+storeHtml()+settingsHtml();
   } else if (data.mode==="demo"){
     t.textContent = "デモデータ";
     b.className = "banner";
-    b.innerHTML = '<span class="pill warn">デモデータ</span><span>'+esc(data.error||"")+' いま表示しているユーザー・枠は架空の例です。</span>'+settingsHtml();
+    b.innerHTML = '<span class="pill warn">デモデータ</span><span>'+esc(data.error||"")+' いま表示しているユーザー・枠は架空の例です。</span>'+storeHtml()+settingsHtml();
   }
+}
+function storeHtml(){
+  return store.mode==="supabase"
+    ? '<span class="pill ok">共有保存：Supabase</span><span>予約・トスアップ・再電話・メモ・仮押さえは全員で共有されます'+(store.syncedAt?'（'+fmtT(store.syncedAt)+' 同期）':'')+'。</span>'
+    : '<span class="pill warn">このブラウザ内に保存</span><span>'+esc(store.reason)+'</span>';
 }
 function settingsHtml(){
   return '<details class="sec" style="flex:1 1 100%;background:var(--surface)"><summary>SMSで送るLINE友だち追加URL'+(st.lineUrl?'：'+esc(st.lineUrl):'（未設定）')+'</summary><div class="in settings"><label class="f"><span>公式LINEの友だち追加URL（lin.ee など）</span><input type="text" id="line-url" value="'+esc(st.lineUrl)+'" placeholder="https://lin.ee/xxxxxxx"></label><button type="button" class="btn flex0" id="line-url-save">保存</button></div></details>';
@@ -663,7 +776,9 @@ function capacity(t){
   if (t < addMin(new Date(), LEAD_MIN)) return {n:0, past:true, staff:[]};
   if (!s) return {n:0, past:false, staff:[]};
   let n = s.available;
-  if (data.mode==="demo") n -= st.drafts.filter(b => b.start===t.toISOString()).length;
+  const iso = t.toISOString(), now = Date.now();
+  n -= st.drafts.filter(b => b.start===iso && (b.hubStatus||"draft")==="draft").length;
+  n -= st.holds.filter(h => h.start===iso && h.expires > now && h.by !== operator()).length;
   return {n:Math.max(0,n), past:false, staff:s.staff};
 }
 const BANDS = {am:[9,12,"午前"], pm:[12,17,"午後"], ev:[17,23,"夜"]};
@@ -725,13 +840,17 @@ function renderHold(){
   const t = new Date(ui.sel), left = ui.hold ? Math.max(0, Math.round((ui.hold.expires - Date.now())/1000)) : 0, c = capacity(t);
   el.innerHTML = '<div class="holdbar"><span>仮押さえ中</span><b>'+dayFull(t)+' '+fmtT(t)+'</b><span style="font-size:12px">空きIS：'+esc((c.staff||[]).join("、")||"-")+'</span><span class="timer" id="timer">残り '+Math.floor(left/60)+':'+pad(left%60)+'</span><button type="button" class="btn sm" id="release">解除</button></div>';
 }
-function selectSlot(ms){
+async function selectSlot(ms){
   const t = new Date(ms);
   if (capacity(t).n <= 0){ toast("この枠は埋まりました。ほかの枠を選んでください。"); renderAll(); return; }
-  ui.sel = ms; ui.hold = {start:ms, expires:Date.now()+HOLD_SEC*1000};
+  const prev = ui.hold && ui.hold.id;
+  const h = await acquireHold(t);
+  if (!h.ok){ toast("ほかの担当がこの枠を押さえました。ほかの枠を選んでください。"); try { await loadShared(); } catch(e){} renderAll(); return; }
+  if (prev) releaseHoldRow(prev);
+  ui.sel = ms; ui.hold = {start:ms, expires:Date.now()+HOLD_SEC*1000, id:h.id||null};
   renderAll();
 }
-function releaseHold(msg){ ui.sel = null; ui.hold = null; if (msg) toast(msg); renderAll(); }
+function releaseHold(msg){ if (ui.hold && ui.hold.id) releaseHoldRow(ui.hold.id); ui.sel = null; ui.hold = null; if (msg) toast(msg); renderAll(); }
 setInterval(() => {
   if (!ui.hold) return;
   if (Date.now() >= ui.hold.expires){ releaseHold("仮押さえの5分が過ぎたため解除しました。もう一度枠を選んでください。"); return; }
@@ -980,18 +1099,23 @@ function insertSql(b, u){
   return "insert into interview_bookings\n  (booker_name, title, start_at, end_at, line_user_id, users_id, form_id, reminder_type_id, tag, is_staff_id, appointment_getter_id, memo)\nvalues\n  ("+
     [sqlStr(u.name), sqlStr(f.name), sqlStr(start.toISOString()), sqlStr(end.toISOString()), sqlStr(u.lineUid||""), u.id && isUuid(u.id) ? sqlStr(u.id) : "null", sqlStr(f.id), f.reminder, sqlStr(HUB_TAG), b.staffId ? sqlStr(b.staffId) : "null", sqlStr(SWITCH_STAFF_ID), sqlStr("架電代行："+b.by+(b.verifyNote?"／本人確認："+b.verifyNote:""))].join(", ")+");";
 }
-function book(e){
+async function book(e){
   e.preventDefault();
   if (ui.tossFor){ saveToss(); return; }
+  if (book.busy) return;
   const u = ui.user; if (!u || !verified() || !ui.sel || !F("name").value.trim()) return;
   const t = new Date(ui.sel);
   if (capacity(t).n <= 0){ toast("この枠は直前に埋まりました。ほかの枠を選んでください。"); releaseHold(); return; }
   const staff = pickStaff(t);
   const b = {id:"draft-"+Date.now().toString(36), userId:u.id, start:t.toISOString(), method:ui.method, staff: staff ? staff.name : "", staffId: staff ? staff.id : null,
     by:operator(), createdAt:new Date().toISOString(), verifyNote: ui.mismatch ? ui.mismatchReason.trim() : "", notice: (u.blocked || !u.lineAdded) ? "SMS" : "LINE",
-    u:{id:u.id, name:u.name, phone:u.phone}, fmt:getFmt(), tossed: fmtMissing().length===0, tossedAt: fmtMissing().length===0 ? new Date().toISOString() : null};
-  st.drafts.push(b); ls.set("drafts", st.drafts);
-  st.logs.forEach(l => { if (l.u && l.u.id===u.id && l.type==="再電話") l.done = true; }); saveLogs();
+    u:{id:u.id, name:u.name, phone:u.phone}, lineUid:u.lineUid||"", hubStatus:"draft", fmt:getFmt(), tossed: fmtMissing().length===0, tossedAt: fmtMissing().length===0 ? new Date().toISOString() : null};
+  book.busy = true; $("book").disabled = true; $("book").textContent = "保存しています…";
+  st.logs.forEach(l => { if (l.u && l.u.id===u.id && l.type==="再電話") l.done = true; });
+  st.drafts.push(b);
+  await persistBooking(b);
+  book.busy = false;
+  if (ui.hold && ui.hold.id) releaseHoldRow(ui.hold.id);
   ui.done = {booking:b, user:u, slack:slackFmt(b,u.phone), sql:insertSql(b,u)};
   ui.hold = null; ui.sel = null;
   renderAll();
@@ -1015,10 +1139,11 @@ function openToss(id){
   renderAll(); $("p-fmt").scrollIntoView({block:"start"});
 }
 function closeToss(){ ui.tossFor = null; if (ui.user) prefill(); else FMT_KEYS.forEach(k => setField(k, "")); renderAll(); }
-function saveToss(){
+async function saveToss(){
   const d = draftById(ui.tossFor); if (!d || fmtMissing().length) return;
   d.fmt = Object.assign(getFmt(), {method:d.method}); d.tossed = true; d.tossedAt = new Date().toISOString(); d.tossedBy = operator();
-  ls.set("drafts", st.drafts);
+  $("book").disabled = true; $("book").textContent = "保存しています…";
+  await persistToss(d);
   ui.tossFor = null;
   ui.done = {booking:d, user:Object.assign({lineUid:"", bookings:[]}, d.u), slack:slackFmt(d, d.u.phone), sql:"", tossOnly:true};
   renderAll(); $("p-fmt").scrollIntoView({block:"start"});
@@ -1105,7 +1230,7 @@ function outcomeText(){
   return lines.join("\n");
 }
 function updateOutcomeText(){ const el = $("o-text"); if (el) el.textContent = outcomeText(); }
-function saveOutcome(){
+async function saveOutcome(){
   const u = ui.user; if (!u) return;
   const v = outcomeVals();
   const log = {id:"l"+Date.now(), u:{id:u.id, name:u.name, phone:u.phone}, type:ui.outcome, by:operator(), at:new Date().toISOString(), state:v.state, pref:v.pref, memo:v.memo};
@@ -1114,8 +1239,9 @@ function saveOutcome(){
     log.callbackAt = new Date(v.at).toISOString(); log.done = false;
     st.logs.forEach(l => { if (l.u && l.u.id===u.id && l.type==="再電話") l.done = true; });
   }
-  st.logs.push(log); saveLogs();
-  toast(ui.outcome==="再電話" ? "再電話リストに登録しました" : "「"+ui.outcome+"」として記録しました");
+  st.logs.push(log);
+  const shared = await persistLog(log);
+  toast((ui.outcome==="再電話" ? "再電話リストに登録しました" : "「"+ui.outcome+"」として記録しました") + (shared ? "（全員に共有）" : ""));
   ui.outcome = null; renderAll();
 }
 
@@ -1143,7 +1269,7 @@ function renderToss(){
 }
 function renderList(){
   const body = $("list-body");
-  const drafts = st.drafts.slice().reverse().map(b => '<tr><td class="mono">'+fmtD(new Date(b.start))+' '+fmtT(new Date(b.start))+'</td><td>'+esc((b.u && b.u.name)||"（この画面で作成）")+'</td><td>'+esc(FORMS[b.method].label)+'</td><td>'+esc(b.staff||"-")+'</td><td>スイッチ（'+esc(b.by)+'）</td><td class="mono">'+HUB_TAG+'</td><td><span class="pill warn">未登録（試作）</span></td></tr>').join("");
+  const drafts = st.drafts.slice().reverse().map(b => '<tr><td class="mono">'+fmtD(new Date(b.start))+' '+fmtT(new Date(b.start))+'</td><td>'+esc((b.u && b.u.name)||"（この画面で作成）")+'</td><td>'+esc(FORMS[b.method].label)+'</td><td>'+esc(b.staff||"-")+'</td><td>スイッチ（'+esc(b.by)+'）</td><td class="mono">'+HUB_TAG+'</td><td><span class="pill warn">Hub未登録</span></td></tr>').join("");
   if (data.mode!=="live"){ body.innerHTML = drafts || '<tr><td colspan="7"><div class="empty">Supabaseにつながると、Hubに登録されているスイッチ経由の予約が表示されます。</div></td></tr>'; return; }
   if (data.hubListErr){ body.innerHTML = drafts + '<tr><td colspan="7"><div class="empty">'+esc(data.hubListErr)+'</div></td></tr>'; return; }
   if (!data.hubList){ body.innerHTML = drafts + '<tr><td colspan="7"><div class="empty">Hubから読み込み中…</div></td></tr>'; return; }
@@ -1220,7 +1346,7 @@ document.addEventListener("click", e => {
   if (t.id==="ask-btn"){ askCheck(); return; }
   if (t.id==="slots-reload"){ reloadSlots(); toast("空き枠を読み込み直しています"); return; }
   if (t.id==="list-reload"){ loadHubList(); return; }
-  if (t.id==="line-url-save"){ const v = ($("line-url").value||"").trim(); if (v && !/^https:\/\//.test(v)){ toast("https:// から始まるURLを入れてください"); return; } st.lineUrl = v; ls.set("lineUrl", v); renderConn(); renderHits(); renderVerify(); renderDone(); toast("友だち追加URLを保存しました"); return; }
+  if (t.id==="line-url-save"){ const v = ($("line-url").value||"").trim(); if (v && !/^https:\/\//.test(v)){ toast("https:// から始まるURLを入れてください"); return; } st.lineUrl = v; persistSetting("line_add_url", v).then(sh => { renderConn(); renderHits(); renderVerify(); renderDone(); toast("友だち追加URLを保存しました"+(sh?"（全員に共有）":"")); }); return; }
 });
 document.addEventListener("input", e => {
   const id = e.target.id;
@@ -1233,15 +1359,21 @@ document.addEventListener("input", e => {
   if (id==="sms-text"){ const n = [...e.target.value].length; const meta = e.target.parentNode.querySelector(".meta span:last-child"); if (meta) meta.textContent = n+"文字（"+(n<=70?1:Math.ceil(n/67))+"通分）"; return; }
   if (id && id.startsWith("f-")) renderFmt();
 });
-document.addEventListener("change", e => { if (e.target.id==="f-med") renderFmt(); if (["o-state","o-memo-slack"].includes(e.target.id)) updateOutcomeText(); });
+document.addEventListener("change", e => { if (e.target.id==="operator"){ ls.set("operator", e.target.value); renderAll(); } if (e.target.id==="f-med") renderFmt(); if (["o-state","o-memo-slack"].includes(e.target.id)) updateOutcomeText(); });
 
 /* 初期表示 */
 $("ask-at").value = toLocalInput(at(1,19,0));
 ui.slotView = ls.get("slotView","pick");
+{ const op = ls.get("operator", ""); if (op && [...$("operator").options].some(o => o.value===op)) $("operator").value = op; }
 setView(ls.get("view","call"));
 renderAll();
 boot();
 setInterval(() => { if (!document.hidden){ renderRecall(); if (!ui.hold){ renderCal(); renderProposals(); } } }, 60000);
 setInterval(() => { if (!document.hidden && data.mode==="live") reloadSlots(); }, 5*60000);
+setInterval(async () => {
+  if (document.hidden || store.mode!=="supabase") return;
+  try { await loadShared(); renderConn(); renderRecall(); renderToss(); renderList(); renderHeat(); renderProposals(); renderCal(); if (!ui.tossFor && !ui.done) renderHits(); }
+  catch(e){ /* 次回に再試行 */ }
+}, 30000);
 })();
 </script>

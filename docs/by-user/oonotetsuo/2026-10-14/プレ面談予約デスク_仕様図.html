@@ -1,0 +1,355 @@
+<title>プレ面談予約デスク仕様</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: 1カラムの仕様書。図ごとに「何が分かるか」を見出しとキャプションで言い切る */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --sunk:#e9edf1; --line:#c9d2db;
+  --ink:#18222e; --muted:#5b6876;
+  --accent:#0b6b73; --accent-soft:#d9eef0; --warn:#a15c00; --warn-soft:#fdecd2; --ok:#17803d; --ok-soft:#dcf2e3;
+  --font-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171d; --surface:#18212a; --sunk:#0d1318; --line:#34424f; --ink:#e4eaf0; --muted:#97a5b3;
+  --accent:#4fb8c0; --accent-soft:#16383c; --warn:#f0aa4c; --warn-soft:#3a2a12; --ok:#5fcf86; --ok-soft:#14321f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171d; --surface:#18212a; --sunk:#0d1318; --line:#34424f; --ink:#e4eaf0; --muted:#97a5b3;
+  --accent:#4fb8c0; --accent-soft:#16383c; --warn:#f0aa4c; --warn-soft:#3a2a12; --ok:#5fcf86; --ok-soft:#14321f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.75}
+.wrap{max-width:1040px;margin:0 auto;padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header .eyebrow{font-size:12px;letter-spacing:.12em;color:var(--accent);font-weight:700}
+h1{font-size:30px;line-height:1.3;margin:4px 0 12px;text-wrap:balance}
+h2{font-size:20px;margin:48px 0 6px;text-wrap:balance;display:flex;gap:10px;align-items:baseline}
+h2 .no{font-family:var(--font-mono);font-size:13px;color:var(--accent)}
+h3{font-size:15px;margin:24px 0 6px}
+p{margin:0 0 12px;max-width:68ch}
+.lead{font-size:16px;color:var(--muted)}
+.mono{font-family:var(--font-mono);font-size:.92em}
+code{font-family:var(--font-mono);font-size:.88em;background:var(--sunk);padding:1px 5px;border-radius:4px}
+figure{margin:16px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+figure .scroll{overflow-x:auto}
+figure svg{display:block;width:100%;height:auto;min-width:640px;color:var(--ink)}
+figcaption{font-size:13px;color:var(--muted);margin-top:10px;max-width:none}
+.tblwrap{overflow-x:auto;margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-size:12px;color:var(--muted);font-weight:500;background:var(--sunk);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.acc{background:var(--accent-soft);color:var(--accent)}
+.toc{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;margin-top:16px}
+.toc a{color:var(--accent)}
+/* SVG parts */
+.bx{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.bx.acc{stroke:var(--accent);stroke-width:2}
+.bx.soft{fill:var(--accent-soft);stroke:var(--accent)}
+.bx.warn{fill:var(--warn-soft);stroke:var(--warn)}
+.bx.ok{fill:var(--ok-soft);stroke:var(--ok)}
+.bx.mute{fill:var(--sunk);stroke:var(--line)}
+.bx.dash{stroke-dasharray:6 4}
+.ln{stroke:currentColor;stroke-width:1.5;fill:none}
+.ln.dash{stroke-dasharray:6 4;opacity:.75}
+.ln.acc{stroke:var(--accent)}
+.t{fill:currentColor;font-size:13px}
+.t.b{font-weight:700}
+.t.s{font-size:11.5px;fill:var(--muted)}
+.t.m{font-family:var(--font-mono);font-size:11.5px}
+.t.a{fill:var(--accent);font-weight:700}
+.t.w{fill:var(--warn);font-weight:700}
+.halo{paint-order:stroke;stroke:var(--surface);stroke-width:5px;stroke-linejoin:round}
+.ah{fill:currentColor}
+.ah.acc{fill:var(--accent)}
+@media (max-width:640px){h1{font-size:24px}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">仕様書 v4 ・ 2026-10-14</div>
+  <h1>プレ面談予約デスク 仕様</h1>
+  <p class="lead">架電代行（スイッチ社）が電話中に、ユーザーを電話番号で特定し、登録名で本人確認をして、foresmaのIS空き枠にプレ面談を予約するための画面です。この資料は、データの流れ・架電の手順・予約の状態・空き枠の数え方・保存先を図で示します。</p>
+  <nav class="toc" aria-label="目次"><a href="#arch">1 全体の構成</a><a href="#flow">2 架電の流れ</a><a href="#state">3 予約の状態</a><a href="#cap">4 空き枠の数え方</a><a href="#data">5 保存するデータ</a><a href="#screens">6 画面ごとの仕様</a><a href="#rules">7 入力ルール</a><a href="#timing">8 同期のタイミング</a><a href="#next">9 次のフェーズ</a></nav>
+</header>
+
+<section id="arch">
+  <h2><span class="no">01</span>全体の構成</h2>
+  <p>画面は、開いた人のSupabase接続を使って2つのデータベースに直接つなぎます。Hubは読むだけで、共有データ（予約・トスアップ・再電話・仮押さえ）は別のプロジェクトに保存します。点線は次のフェーズでつなぐ部分です。</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 980 480" role="img" aria-label="プレ面談予約デスクは、LREACH Hubを読み取り、ohno_projectの共有テーブルに読み書きする。Hub予約API・SMS送信は次のフェーズでつなぐ。">
+      <defs>
+        <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+        <marker id="a1g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah acc"/></marker>
+      </defs>
+      <!-- desk -->
+      <rect class="bx acc" x="20" y="190" width="180" height="100" rx="10"/>
+      <text class="t b" x="110" y="222" text-anchor="middle">プレ面談予約デスク</text>
+      <text class="t s" x="110" y="244" text-anchor="middle">架電代行が使う画面</text>
+      <text class="t s" x="110" y="264" text-anchor="middle">（claude.ai で開く）</text>
+      <!-- hub -->
+      <rect class="bx" x="300" y="40" width="300" height="150" rx="10"/>
+      <text class="t b" x="316" y="64">LREACH Hub</text><text class="t s" x="584" y="64" text-anchor="end">読み取りのみ</text>
+      <text class="t m" x="316" y="92">user_profiles・users</text><text class="t s" x="584" y="92" text-anchor="end">電話番号で検索</text>
+      <text class="t m" x="316" y="116">slot_capacity_logs</text><text class="t s" x="584" y="116" text-anchor="end">空き枠</text>
+      <text class="t m" x="316" y="140">is_staff・割当設定</text><text class="t s" x="584" y="140" text-anchor="end">ISの優先度</text>
+      <text class="t m" x="316" y="164">interview_bookings</text><text class="t s" x="584" y="164" text-anchor="end">既存予約</text>
+      <!-- ohno -->
+      <rect class="bx soft" x="300" y="290" width="300" height="172" rx="10"/>
+      <text class="t b" x="316" y="314">ohno_project</text><text class="t a" x="584" y="314" text-anchor="end">共有保存（読み書き）</text>
+      <text class="t m" x="316" y="342">desk_bookings</text><text class="t s" x="584" y="342" text-anchor="end">予約・トスアップ</text>
+      <text class="t m" x="316" y="366">desk_call_logs</text><text class="t s" x="584" y="366" text-anchor="end">再電話・メモ</text>
+      <text class="t m" x="316" y="390">desk_slot_holds</text><text class="t s" x="584" y="390" text-anchor="end">5分の仮押さえ</text>
+      <text class="t m" x="316" y="414">desk_settings</text><text class="t s" x="584" y="414" text-anchor="end">共有設定</text>
+      <text class="t m" x="316" y="440">tossup_info</text><text class="t s" x="584" y="440" text-anchor="end">過去のトスアップ（読む）</text>
+      <!-- right side -->
+      <rect class="bx dash" x="700" y="50" width="250" height="56" rx="10"/>
+      <text class="t b" x="825" y="76" text-anchor="middle">Hub予約API</text><text class="t s" x="825" y="96" text-anchor="middle">LINE予約と同じ処理</text>
+      <rect class="bx" x="700" y="130" width="250" height="50" rx="10"/>
+      <text class="t b" x="825" y="160" text-anchor="middle">ユーザーの公式LINE</text>
+      <rect class="bx dash" x="700" y="212" width="250" height="56" rx="10"/>
+      <text class="t b" x="825" y="238" text-anchor="middle">SMS送信</text><text class="t s" x="825" y="258" text-anchor="middle">LINEに届かない人</text>
+      <rect class="bx" x="20" y="370" width="180" height="56" rx="10"/>
+      <text class="t b" x="110" y="396" text-anchor="middle">Slack</text><text class="t s" x="110" y="416" text-anchor="middle">#調整-foresma-スイッチ</text>
+      <!-- arrows -->
+      <line class="ln" x1="200" y1="205" x2="298" y2="120" marker-end="url(#a1)"/>
+      <text class="t s halo" x="246" y="152" text-anchor="middle">読む</text>
+      <line class="ln acc" x1="200" y1="275" x2="298" y2="360" marker-end="url(#a1g)" marker-start="url(#a1g)"/>
+      <text class="t a halo" x="250" y="330" text-anchor="middle">読み書き</text>
+      <polyline class="ln dash" points="110,190 110,20 825,20 825,48" marker-end="url(#a1)"/>
+      <text class="t s halo" x="460" y="24" text-anchor="middle">予約を登録（次フェーズ）</text>
+      <line class="ln dash" x1="700" y1="78" x2="602" y2="78" marker-end="url(#a1)"/>
+      <text class="t s halo" x="651" y="72" text-anchor="middle">登録</text>
+      <line class="ln dash" x1="825" y1="106" x2="825" y2="128" marker-end="url(#a1)"/>
+      <text class="t s" x="835" y="122">確定メッセージ・リマインド</text>
+      <line class="ln dash" x1="200" y1="240" x2="698" y2="240" marker-end="url(#a1)"/>
+      <text class="t s halo" x="450" y="234" text-anchor="middle">友だち追加URL（次フェーズ）</text>
+      <line class="ln" x1="110" y1="290" x2="110" y2="368" marker-end="url(#a1)"/>
+      <text class="t s halo" x="118" y="334">送客FMTをコピー</text>
+    </svg>
+    </div>
+    <figcaption>Hubには一切書き込みません。共有データは ohno_project の <code>desk_*</code> テーブルに保存し、開いている全員の画面に30秒ごとに反映されます。</figcaption>
+  </figure>
+</section>
+
+<section id="flow">
+  <h2><span class="no">02</span>架電の流れ</h2>
+  <p>1本の電話で上から下へ進みます。予約に至らなかった場合は、どの段階からでも結果とメモを残せます。トスアップ（送客FMT）は予約と同時でも、あとからでも入れられます。</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 900 660" role="img" aria-label="電話番号で検索し、登録名で本人確認、空き枠を提案して5分仮押さえ、予約確定。トスアップ項目がそろっていればトスアップ済み、なければトスアップ待ち。">
+      <defs>
+        <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+      </defs>
+      <rect class="bx mute" x="230" y="20" width="240" height="44" rx="22"/><text class="t b" x="350" y="47" text-anchor="middle">架電</text>
+      <rect class="bx acc" x="230" y="92" width="240" height="44" rx="8"/><text class="t b" x="350" y="119" text-anchor="middle">STEP1 電話番号で検索</text>
+      <rect class="bx warn" x="250" y="164" width="200" height="44" rx="8"/><text class="t b" x="350" y="191" text-anchor="middle">Hubに登録がある？</text>
+      <rect class="bx acc" x="230" y="236" width="240" height="44" rx="8"/><text class="t b" x="350" y="263" text-anchor="middle">STEP2 登録名を読み上げて確認</text>
+      <rect class="bx acc" x="230" y="308" width="240" height="56" rx="8"/><text class="t b" x="350" y="332" text-anchor="middle">STEP3 空き枠を提案</text><text class="t s" x="350" y="352" text-anchor="middle">おすすめ ／ カレンダー ／ 日時指定</text>
+      <rect class="bx acc" x="230" y="392" width="240" height="44" rx="8"/><text class="t b" x="350" y="419" text-anchor="middle">枠を5分仮押さえ</text>
+      <rect class="bx acc" x="230" y="464" width="240" height="44" rx="8"/><text class="t b" x="350" y="491" text-anchor="middle">STEP4 予約確定</text>
+      <rect class="bx warn" x="235" y="536" width="230" height="44" rx="8"/><text class="t b" x="350" y="563" text-anchor="middle">トスアップ項目がそろってる？</text>
+      <rect class="bx ok" x="60" y="604" width="220" height="44" rx="8"/><text class="t b" x="170" y="631" text-anchor="middle">トスアップ済み</text>
+      <rect class="bx warn" x="420" y="604" width="260" height="44" rx="8"/><text class="t b" x="550" y="631" text-anchor="middle">トスアップ待ち → あとで入力</text>
+      <!-- side boxes -->
+      <rect class="bx" x="560" y="164" width="300" height="44" rx="8"/><text class="t" x="710" y="191" text-anchor="middle">SMSで友だち追加URL → 再電話</text>
+      <rect class="bx" x="560" y="236" width="300" height="44" rx="8"/><text class="t" x="710" y="263" text-anchor="middle">名前が違う：確認内容を書けば続行</text>
+      <rect class="bx" x="560" y="392" width="300" height="44" rx="8"/><text class="t" x="710" y="419" text-anchor="middle">他の担当が押さえ済み → 別の枠</text>
+      <rect class="bx" x="20" y="300" width="170" height="80" rx="8"/><text class="t b" x="105" y="326" text-anchor="middle">断られた・保留</text><text class="t s" x="105" y="347" text-anchor="middle">結果・通話状況・メモ</text><text class="t s" x="105" y="367" text-anchor="middle">→ 再電話リスト</text>
+      <!-- main arrows -->
+      <line class="ln" x1="350" y1="64" x2="350" y2="90" marker-end="url(#a2)"/>
+      <line class="ln" x1="350" y1="136" x2="350" y2="162" marker-end="url(#a2)"/>
+      <line class="ln" x1="350" y1="208" x2="350" y2="234" marker-end="url(#a2)"/><text class="t s" x="358" y="226">ある</text>
+      <line class="ln" x1="350" y1="280" x2="350" y2="306" marker-end="url(#a2)"/><text class="t s" x="358" y="298">本人と確認</text>
+      <line class="ln" x1="350" y1="364" x2="350" y2="390" marker-end="url(#a2)"/><text class="t s" x="358" y="382">「ここで」</text>
+      <line class="ln" x1="350" y1="436" x2="350" y2="462" marker-end="url(#a2)"/>
+      <line class="ln" x1="350" y1="508" x2="350" y2="534" marker-end="url(#a2)"/>
+      <polyline class="ln" points="300,580 300,592 170,592 170,602" marker-end="url(#a2)"/><text class="t s halo" x="236" y="590" text-anchor="middle">そろっている</text>
+      <polyline class="ln" points="400,580 400,592 550,592 550,602" marker-end="url(#a2)"/><text class="t s halo" x="478" y="590" text-anchor="middle">未入力あり</text>
+      <!-- side arrows -->
+      <line class="ln" x1="450" y1="186" x2="558" y2="186" marker-end="url(#a2)"/><text class="t s halo" x="504" y="180" text-anchor="middle">ない</text>
+      <line class="ln" x1="470" y1="258" x2="558" y2="258" marker-end="url(#a2)"/><text class="t s halo" x="514" y="252" text-anchor="middle">違う</text>
+      <line class="ln" x1="470" y1="414" x2="558" y2="414" marker-end="url(#a2)"/><text class="t s halo" x="514" y="408" text-anchor="middle">埋まった</text>
+      <line class="ln dash" x1="230" y1="336" x2="192" y2="336" marker-end="url(#a2)"/>
+    </svg>
+    </div>
+    <figcaption>予約確定に必要なのは「本人確認・枠・名前」の3つだけです。トスアップが未入力の予約は「トスアップ待ち」タブに入り、誰でもあとから入力できます。</figcaption>
+  </figure>
+</section>
+
+<section id="state">
+  <h2><span class="no">03</span>予約の状態</h2>
+  <p>1件の予約は左から右へ進みます。各状態の下に、どのテーブルのどの値で表しているかを書いています。</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 990 280" role="img" aria-label="予約は、仮押さえ、予約確定（Hub未登録）、トスアップ済み、Hub登録、面談実施または未実施の順に進む。仮押さえは5分で消える。">
+      <defs>
+        <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+      </defs>
+      <rect class="bx" x="20" y="90" width="150" height="70" rx="10"/><text class="t b" x="95" y="120" text-anchor="middle">仮押さえ</text><text class="t s" x="95" y="142" text-anchor="middle">5分間</text>
+      <rect class="bx soft" x="220" y="90" width="150" height="70" rx="10"/><text class="t b" x="295" y="120" text-anchor="middle">予約確定</text><text class="t s" x="295" y="142" text-anchor="middle">Hub未登録</text>
+      <rect class="bx ok" x="420" y="90" width="150" height="70" rx="10"/><text class="t b" x="495" y="120" text-anchor="middle">トスアップ済み</text><text class="t s" x="495" y="142" text-anchor="middle">送客FMTあり</text>
+      <rect class="bx dash" x="620" y="90" width="150" height="70" rx="10"/><text class="t b" x="695" y="120" text-anchor="middle">Hub登録</text><text class="t s" x="695" y="142" text-anchor="middle">次フェーズ</text>
+      <rect class="bx mute" x="820" y="90" width="150" height="70" rx="10"/><text class="t b" x="895" y="120" text-anchor="middle">面談実施／未実施</text><text class="t s" x="895" y="142" text-anchor="middle">Hubで管理</text>
+      <line class="ln" x1="170" y1="125" x2="218" y2="125" marker-end="url(#a3)"/><text class="t s" x="195" y="112" text-anchor="middle">確定</text>
+      <line class="ln" x1="370" y1="125" x2="418" y2="125" marker-end="url(#a3)"/><text class="t s" x="395" y="112" text-anchor="middle">入力</text>
+      <line class="ln dash" x1="570" y1="125" x2="618" y2="125" marker-end="url(#a3)"/><text class="t s" x="595" y="112" text-anchor="middle">登録</text>
+      <line class="ln" x1="770" y1="125" x2="818" y2="125" marker-end="url(#a3)"/><text class="t s" x="795" y="112" text-anchor="middle">面談</text>
+      <!-- expiry -->
+      <polyline class="ln dash" points="95,160 95,200" marker-end="url(#a3)"/><text class="t s" x="95" y="218" text-anchor="middle">5分経過・解除で消える</text>
+      <!-- storage labels -->
+      <text class="t m" x="95" y="60" text-anchor="middle">desk_slot_holds</text><text class="t s" x="95" y="78" text-anchor="middle">expires_at</text>
+      <text class="t m" x="295" y="60" text-anchor="middle">desk_bookings</text><text class="t s" x="295" y="78" text-anchor="middle">hub_status=draft・tossed=false</text>
+      <text class="t m" x="495" y="60" text-anchor="middle">desk_bookings</text><text class="t s" x="495" y="78" text-anchor="middle">tossed=true・fmt</text>
+      <text class="t m" x="695" y="60" text-anchor="middle">interview_bookings</text><text class="t s" x="695" y="78" text-anchor="middle">hub_status=registered</text>
+      <text class="t m" x="895" y="60" text-anchor="middle">interview_bookings</text><text class="t s" x="895" y="78" text-anchor="middle">status 12 ／ 13</text>
+      <text class="t s" x="295" y="190" text-anchor="middle">「トスアップ待ち」タブに表示</text>
+      <text class="t s" x="295" y="208" text-anchor="middle">ユーザーには確定メッセージ</text>
+    </svg>
+    </div>
+    <figcaption>今のバージョンは「予約確定」「トスアップ済み」までを共有保存します。Hubへの登録（点線）はHub予約APIにつないだときに有効になります。</figcaption>
+  </figure>
+</section>
+
+<section id="cap">
+  <h2><span class="no">04</span>空き枠の数え方</h2>
+  <p>Hubが5分ごとに計算する空きISの人数から、他の担当がいま押さえている分と、デスクで予約済みだがまだHubに登録していない分を引いた残りが、架電代行に見える空きです。二重予約はこの引き算で防ぎます。</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 860 200" role="img" aria-label="予約できる枠数は、Hubの空きIS人数から、他の担当の仮押さえと、Hub未登録のデスク予約を引いた数。">
+      <path class="ln" d="M40,44 L40,34 L400,34 L400,44"/>
+      <text class="t b" x="220" y="24" text-anchor="middle">Hubの空き（available）＝ 3名</text>
+      <rect class="bx ok" x="40" y="56" width="110" height="80" rx="8"/><text class="t b" x="95" y="92" text-anchor="middle">予約できる</text><text class="t s" x="95" y="114" text-anchor="middle">1名</text>
+      <rect class="bx warn" x="165" y="56" width="110" height="80" rx="8"/><text class="t b" x="220" y="86" text-anchor="middle">他の担当が</text><text class="t b" x="220" y="104" text-anchor="middle">仮押さえ中</text><text class="t s" x="220" y="124" text-anchor="middle">1名</text>
+      <rect class="bx mute" x="290" y="56" width="110" height="80" rx="8"/><text class="t b" x="345" y="86" text-anchor="middle">デスク予約</text><text class="t b" x="345" y="104" text-anchor="middle">Hub未登録</text><text class="t s" x="345" y="124" text-anchor="middle">1名</text>
+      <text class="t b" x="440" y="82">予約できる数 ＝</text>
+      <text class="t m" x="440" y="106">slot_capacity_logs.available</text>
+      <text class="t m" x="440" y="128">− desk_slot_holds（有効・他の担当）</text>
+      <text class="t m" x="440" y="150">− desk_bookings（同じ時刻・draft）</text>
+      <text class="t s" x="40" y="172">枠を押す瞬間にもDB側で同じ計算をし、0なら押さえられません（同時に押した場合の取り合いを防ぐ）。</text>
+    </svg>
+    </div>
+    <figcaption>開始30分前を切った枠は受付終了。枠は30分刻み（Hubの空き枠計算と同じ）、面談は15分です。</figcaption>
+  </figure>
+</section>
+
+<section id="data">
+  <h2><span class="no">05</span>保存するデータ</h2>
+  <p>共有データは4つのテーブルです。ユーザーやISは、Hubのidで紐づけます。作成用のSQLは <code>プレ面談予約デスク_共有テーブル.sql</code> にあります。</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 980 360" role="img" aria-label="desk_bookings、desk_call_logs、desk_slot_holds、desk_settingsの4テーブル。hub_user_idなどでLREACH Hubのusers、is_staff、interview_bookingsに紐づく。">
+      <defs>
+        <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+      </defs>
+      <!-- bookings -->
+      <rect class="bx soft" x="20" y="20" width="300" height="300" rx="10"/>
+      <text class="t b" x="36" y="46">desk_bookings</text><text class="t s" x="304" y="46" text-anchor="end">予約・トスアップ</text>
+      <line class="ln" x1="20" y1="58" x2="320" y2="58" style="opacity:.25"/>
+      <text class="t m" x="36" y="82">hub_user_id</text><text class="t s" x="304" y="82" text-anchor="end">Hub users.id</text>
+      <text class="t m" x="36" y="106">user_name ・ phone</text>
+      <text class="t m" x="36" y="130">start_at ・ method</text><text class="t s" x="304" y="130" text-anchor="end">電話／オンライン</text>
+      <text class="t m" x="36" y="154">staff_name ・ staff_id</text><text class="t s" x="304" y="154" text-anchor="end">割り当てたIS</text>
+      <text class="t m" x="36" y="178">booked_by ・ verify_note</text><text class="t s" x="304" y="178" text-anchor="end">予約者・本人確認</text>
+      <text class="t m" x="36" y="202">hub_status</text><text class="t s" x="304" y="202" text-anchor="end">draft／registered／canceled</text>
+      <text class="t m" x="36" y="226">fmt</text><text class="t s" x="304" y="226" text-anchor="end">送客FMTの全項目</text>
+      <text class="t m" x="36" y="250">tossed ・ tossed_at ・ tossed_by</text>
+      <text class="t m" x="36" y="274">notice</text><text class="t s" x="304" y="274" text-anchor="end">LINE／SMS</text>
+      <text class="t m" x="36" y="298">hub_booking_id</text><text class="t s" x="304" y="298" text-anchor="end">Hub登録後</text>
+      <!-- call logs -->
+      <rect class="bx" x="350" y="20" width="280" height="226" rx="10"/>
+      <text class="t b" x="366" y="46">desk_call_logs</text><text class="t s" x="614" y="46" text-anchor="end">架電結果・メモ</text>
+      <line class="ln" x1="350" y1="58" x2="630" y2="58" style="opacity:.25"/>
+      <text class="t m" x="366" y="82">hub_user_id ・ user_name</text>
+      <text class="t m" x="366" y="106">outcome</text><text class="t s" x="614" y="106" text-anchor="end">再電話／既往歴／時期NG…</text>
+      <text class="t m" x="366" y="130">call_state</text><text class="t s" x="614" y="130" text-anchor="end">通話の状況</text>
+      <text class="t m" x="366" y="154">contact_pref</text><text class="t s" x="614" y="154" text-anchor="end">連絡しやすい時間</text>
+      <text class="t m" x="366" y="178">memo</text><text class="t s" x="614" y="178" text-anchor="end">詳しいメモ</text>
+      <text class="t m" x="366" y="202">callback_at ・ done</text><text class="t s" x="614" y="202" text-anchor="end">再電話リスト</text>
+      <text class="t m" x="366" y="226">logged_by</text>
+      <!-- holds -->
+      <rect class="bx" x="660" y="20" width="300" height="130" rx="10"/>
+      <text class="t b" x="676" y="46">desk_slot_holds</text><text class="t s" x="944" y="46" text-anchor="end">仮押さえ</text>
+      <line class="ln" x1="660" y1="58" x2="960" y2="58" style="opacity:.25"/>
+      <text class="t m" x="676" y="82">slot_start</text><text class="t s" x="944" y="82" text-anchor="end">押さえた枠</text>
+      <text class="t m" x="676" y="106">held_by ・ hub_user_id</text>
+      <text class="t m" x="676" y="130">expires_at</text><text class="t s" x="944" y="130" text-anchor="end">押した時刻＋5分</text>
+      <!-- settings -->
+      <rect class="bx" x="660" y="166" width="300" height="80" rx="10"/>
+      <text class="t b" x="676" y="192">desk_settings</text><text class="t s" x="944" y="192" text-anchor="end">共有設定</text>
+      <text class="t m" x="676" y="222">line_add_url</text><text class="t s" x="944" y="222" text-anchor="end">SMSで送るURL</text>
+      <!-- hub refs -->
+      <rect class="bx dash" x="350" y="280" width="610" height="56" rx="10"/>
+      <text class="t b" x="366" y="304">LREACH Hub（読み取りのみ）</text>
+      <text class="t m" x="366" y="326">users.id ・ is_staff.id ・ interview_bookings.id ・ user_profiles.id（LINE）</text>
+      <polyline class="ln" points="320,82 335,82 335,300 348,300" marker-end="url(#a5)"/>
+      <polyline class="ln" points="630,82 645,82 645,270 655,270 655,278" marker-end="url(#a5)"/>
+    </svg>
+    </div>
+    <figcaption>どのテーブルも公開キー（anon）からは読み書きできません（RLS有効・ポリシーなし）。画面は、開いた人のSupabase接続の権限で読み書きします。</figcaption>
+  </figure>
+</section>
+
+<section id="screens">
+  <h2><span class="no">06</span>画面ごとの仕様</h2>
+  <div class="tblwrap"><table>
+    <thead><tr><th>画面</th><th>できること</th><th>読むデータ</th><th>書くデータ</th></tr></thead>
+    <tbody>
+      <tr><td><b>STEP1 ユーザー特定</b></td><td>電話番号（ハイフン・全角・+81・下4桁）で検索。予約済み・LINEブロック・LINE未追加・同一番号・過去の結果を表示。見つからない人にはSMSで友だち追加URL</td><td>Hub <code>user_profiles</code>・<code>users</code>・<code>interview_bookings</code></td><td>—</td></tr>
+      <tr><td><b>STEP2 本人確認</b></td><td>登録名を読み上げて「本人と確認できた／名前が違う」。違うときは確認内容を書けば続行。同一番号があるときは生年月日も確認。過去のトスアップ（Slack）を表示</td><td>Hub、<code>tossup_info</code></td><td>—</td></tr>
+      <tr><td><b>STEP3 枠を押さえる</b></td><td>おすすめ枠（各日の午前・午後・夜で一番早い空き）、カレンダー（7日×30分）、日時指定の確認。押すと5分仮押さえ</td><td>Hub <code>slot_capacity_logs</code>、<code>desk_slot_holds</code>、<code>desk_bookings</code></td><td><code>desk_slot_holds</code></td></tr>
+      <tr><td><b>STEP4 予約確定</b></td><td>送客FMTの入力・貼り付け読み込み。予約だけ先に確定も可。LINE予約と同じ確定メッセージと、Hubに登録する内容を表示</td><td>Hub <code>is_staff</code>・割当設定</td><td><code>desk_bookings</code></td></tr>
+      <tr><td><b>予約に至らなかった場合</b></td><td>結果（再電話・既往歴・時期NG・不通・対象外）、通話の状況、連絡しやすい時間、詳しいメモ。Slack報告文を作成</td><td>—</td><td><code>desk_call_logs</code></td></tr>
+      <tr><td><b>再電話リスト</b></td><td>再電話予定を時刻順に表示。過ぎたものは赤、1時間以内は黄。「架電する」でSTEP1に読み込み</td><td><code>desk_call_logs</code></td><td>—</td></tr>
+      <tr><td><b>トスアップ待ち</b></td><td>トスアップ未入力の予約の一覧。誰でも入力・見直しができる</td><td><code>desk_bookings</code></td><td><code>desk_bookings</code>（fmt・tossed）</td></tr>
+      <tr><td><b>Hubの予約一覧</b></td><td>Hubに登録済みのスイッチ経由の予約と、デスクのHub未登録予約</td><td>Hub <code>interview_bookings</code>、<code>desk_bookings</code></td><td>—</td></tr>
+      <tr><td><b>空き状況</b></td><td>7日×1時間の空きヒートマップ。押すとカレンダーのその時間へ</td><td>Hub <code>slot_capacity_logs</code></td><td>—</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="rules">
+  <h2><span class="no">07</span>入力ルール</h2>
+  <div class="tblwrap"><table>
+    <thead><tr><th>操作</th><th>必須</th><th>補足</th></tr></thead>
+    <tbody>
+      <tr><td>予約確定</td><td>本人確認（または確認内容）・仮押さえ中の枠・名前・面談方法</td><td>トスアップ項目が未入力なら「予約だけ確定する」になり、トスアップ待ちに入る</td></tr>
+      <tr><td>トスアップ</td><td>名前・ふりがな・生年月日・お住まい・希望勤務地・転職希望時期</td><td>そのほかの送客FMT項目は任意。貼り付けた電話番号が違うと警告</td></tr>
+      <tr><td>再電話</td><td>再電話の日時</td><td>同じ人の古い再電話予定は自動で完了になる。予約すると再電話予定も完了</td></tr>
+      <tr><td>仮押さえ</td><td>空きが1名以上</td><td>5分で自動解除。別の枠を押すと前の押さえは解除</td></tr>
+      <tr><td>LINE追加URL（設定）</td><td>https:// で始まるURL</td><td>全員で共有。未設定だとSMSボタンは押せない</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="timing">
+  <h2><span class="no">08</span>同期のタイミング</h2>
+  <div class="tblwrap"><table>
+    <thead><tr><th>データ</th><th>いつ更新されるか</th></tr></thead>
+    <tbody>
+      <tr><td>Hubの空き枠</td><td>Hubが5分ごとに計算。画面は5分ごとと「空き枠を更新」で読み直す</td></tr>
+      <tr><td>予約・トスアップ・再電話・仮押さえ・設定</td><td>保存した瞬間にSupabaseへ。ほかの人の画面には30秒以内に反映</td></tr>
+      <tr><td>仮押さえの取り合い</td><td>枠を押した瞬間にDBで空きを数え直し、残っていなければ押さえられない</td></tr>
+      <tr><td>Supabaseに書けないとき</td><td>このブラウザ内に保存して、画面上部に理由を表示（読み取り専用・テーブル未作成など）</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="next">
+  <h2><span class="no">09</span>次のフェーズ</h2>
+  <div class="tblwrap"><table>
+    <thead><tr><th>項目</th><th>内容</th><th>状況</th></tr></thead>
+    <tbody>
+      <tr><td>Hubへの予約登録</td><td>Hub予約API（LINE予約と同じ処理）を呼び、<code>interview_bookings</code> 登録・確定メッセージ・リマインドを本番で動かす。登録後に <code>hub_status=registered</code></td><td><span class="pill warn">APIの場所・認証を確認中</span></td></tr>
+      <tr><td>SMS送信</td><td>LINE未登録・ブロック中の人に友だち追加URLを送る</td><td><span class="pill warn">送信の仕組みを確認中</span></td></tr>
+      <tr><td>ログイン</td><td>スイッチ社のメンバーが自分のアカウントで使えるようにする。いまの「架電担当」選択をログインユーザーに置き換え、会社ごとにデータを分ける</td><td><span class="pill">未着手</span></td></tr>
+      <tr><td>Slack自動投稿</td><td>トスアップ・架電報告をボットで自動投稿し、手動コピーをやめる</td><td><span class="pill">未着手</span></td></tr>
+    </tbody>
+  </table></div>
+  <p style="margin-top:16px">いまの共有保存は、foresmaのSupabaseに接続できる人どうしで共有されます。スイッチ社のメンバーが直接使えるようにするには、ログイン機能（次のフェーズ）が必要です。</p>
+</section>
+</div>
