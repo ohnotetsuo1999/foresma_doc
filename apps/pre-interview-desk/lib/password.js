@@ -8,7 +8,8 @@ export async function hashPassword(pw) {
   return `scrypt$${salt}$${hash}`;
 }
 export async function verifyPassword(pw, stored) {
-  const [alg, salt, hash] = String(stored || "").split("$");
+  if (!stored) return false; // Google ログイン専用のメンバー
+  const [alg, salt, hash] = String(stored).split("$");
   if (alg !== "scrypt" || !salt || !hash) return false;
   const got = await scryptAsync(pw, salt, 64);
   const want = Buffer.from(hash, "hex");

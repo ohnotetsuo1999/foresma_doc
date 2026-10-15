@@ -6,7 +6,8 @@
 - 登録後、HubのIS自動割当・カレンダー・面談URL・確定メッセージが済んだかを約90秒追跡して表示
 - トスアップ（送客FMT）は予約と同時でも、あとから「トスアップ待ち」でも入力可。送客FMTの貼り付け読み込みあり
 - 予約に至らなかった結果・通話状況・メモ・再電話リストを全員で共有
-- メールアドレス＋パスワードのログイン、管理者によるメンバー追加・無効化・パスワード再発行
+- **Googleログイン**（招待制：管理者がメンバー登録したメールアドレスだけ）。パスワードログインも予備として使える（`PASSWORD_LOGIN=0` で無効化）
+- 管理者によるメンバー追加・無効化・パスワード再発行
 
 仕様の図解：`docs/by-user/oonotetsuo/2026-10-14/プレ面談予約デスク_仕様図.html`
 
@@ -26,21 +27,27 @@
 1. **共有テーブルを作る**：ohno_project の SQL Editor で `sql/desk_tables.sql` を実行
 2. **接続文字列を用意**：Supabase の各プロジェクト → Project Settings → Database → Connection string（Transaction pooler, 6543）
    - Hub側のユーザーには `interview_bookings` への INSERT 権限が必要です（読み取り専用ユーザーでは登録できません）
-3. **環境変数**：`.env.example` を見て `HUB_DATABASE_URL` / `DESK_DATABASE_URL` / `SESSION_SECRET`（`openssl rand -hex 32`）を設定
+3. **Googleログインの準備**（Google Cloud Console）
+   - 「APIとサービス」→「OAuth同意画面」：ユーザーの種類は **外部**（スイッチ社のGoogleアカウントも使うため）。アプリ名・サポートメールを入れて公開
+   - 「認証情報」→「OAuthクライアントID」→ 種類「ウェブアプリケーション」
+   - 承認済みのリダイレクトURI：`https://（公開URL）/api/auth/google/callback`（ローカルは `http://localhost:3100/api/auth/google/callback`）
+   - 表示されたクライアントIDとシークレットを環境変数へ
+4. **環境変数**：`.env.example` を見て `HUB_DATABASE_URL` / `DESK_DATABASE_URL` / `SESSION_SECRET`（`openssl rand -hex 32`）/ `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `APP_BASE_URL` を設定
    - 本番前の確認だけしたいときは `HUB_WRITE_DISABLED=1`（Hubに書き込まず「Hub未登録」で保存）
-4. **最初の管理者を作る**
+5. **最初の管理者を作る**（Googleログインだけならパスワードは `-`）
    ```
    npm install
-   DESK_DATABASE_URL=... npm run create-member -- you@foresma.jp "foresma 大野" "10文字以上のパスワード" admin foresma
+   DESK_DATABASE_URL=... npm run create-member -- ohnotetsuo@foresma.jp "foresma 大野" - admin foresma
    ```
-5. **起動**：`npm run dev`（http://localhost:3100）。ログイン後、右上「メンバー管理」からスイッチ社のメンバーを追加
+6. **起動**：`npm run dev`（http://localhost:3100）。Googleでログインし、右上「メンバー管理」からスイッチ社のメンバーをメールアドレスで追加（そのGoogleアカウントでログインできるようになります）
 
 ## Vercel に公開する
 
 1. Vercel で GitHub リポジトリ `ohnotetsuo1999/foresma_doc` をインポート
 2. **Root Directory** を `apps/pre-interview-desk` に設定（Framework は Next.js を自動検出）
-3. Environment Variables に `HUB_DATABASE_URL` / `DESK_DATABASE_URL` / `SESSION_SECRET` を登録
-4. デプロイ後、管理者でログインしてメンバーを追加
+3. Environment Variables に `HUB_DATABASE_URL` / `DESK_DATABASE_URL` / `SESSION_SECRET` / `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `APP_BASE_URL`（例：https://pre-interview-desk.vercel.app）を登録
+4. Google Cloud Console のリダイレクトURIに `（APP_BASE_URL）/api/auth/google/callback` を追加
+5. デプロイ後、Googleでログインしてメンバーを追加
 
 ## 本番での最初の確認
 

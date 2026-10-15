@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { COOKIE, readSession } from "./lib/session.js";
 
-const PUBLIC = ["/login", "/login.html", "/api/login", "/favicon.ico"];
+const PUBLIC = ["/login", "/login.html", "/api/login", "/api/auth/config", "/api/auth/google", "/api/auth/google/callback", "/favicon.ico"];
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl;

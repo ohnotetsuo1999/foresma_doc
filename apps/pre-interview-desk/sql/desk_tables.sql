@@ -80,7 +80,7 @@ create table if not exists public.desk_members (
   name text not null,                    -- 画面と記録に出る名前（例：スイッチ 荒木）
   role text not null default 'agent' check (role in ('agent','admin')),
   company text,
-  password_hash text not null,           -- scrypt
+  password_hash text,                    -- scrypt。空ならGoogleログインだけ
   active boolean not null default true,
   last_login_at timestamptz,
   created_at timestamptz not null default now()

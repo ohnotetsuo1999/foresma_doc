@@ -32,7 +32,7 @@ th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white
     <label>名前（画面と記録に出ます）<input id="m-name" placeholder="スイッチ 荒木" required></label>
     <label>会社<input id="m-company" placeholder="スイッチ"></label>
     <label>メールアドレス<input id="m-email" type="email" required></label>
-    <label>初期パスワード（10文字以上）<input id="m-pw" type="text" minlength="10" required></label>
+    <label>初期パスワード（Googleログインだけなら空欄）<input id="m-pw" type="text" minlength="10"></label>
     <label>権限<select id="m-role"><option value="agent">架電担当</option><option value="admin">管理者</option></select></label>
     <button class="btn primary" type="submit">追加する</button>
   </form>
@@ -60,7 +60,7 @@ async function load() {
 $("add").addEventListener("submit", async e => {
   e.preventDefault();
   try { await api("/api/members", {method:"POST", body: JSON.stringify({name:$("m-name").value, company:$("m-company").value, email:$("m-email").value, password:$("m-pw").value, role:$("m-role").value})});
-    show("追加しました。メールアドレスと初期パスワードを本人に伝えてください。", true); e.target.reset(); load(); } catch (x) { show(x.message, false); }
+    show("追加しました。このメールアドレスのGoogleアカウントでログインできます" + ($("m-pw").value ? "（パスワードでも可）" : "") + "。", true); e.target.reset(); load(); } catch (x) { show(x.message, false); }
 });
 document.addEventListener("click", async e => {
   const t = e.target.closest("[data-toggle]"), p = e.target.closest("[data-pw]");

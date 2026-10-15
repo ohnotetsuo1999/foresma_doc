@@ -7,6 +7,7 @@ import { COOKIE, SESSION_HOURS, signSession } from "../../../lib/session.js";
 import { json } from "../../../lib/api.js";
 
 export async function POST(req) {
+  if (process.env.PASSWORD_LOGIN === "0") return json({ error: "パスワードでのログインは使えません。Googleでログインしてください。" }, 403);
   let b = {}; try { b = await req.json(); } catch {}
   const email = String(b.email || "").trim().toLowerCase(), password = String(b.password || "");
   if (!email || !password) return json({ error: "メールアドレスとパスワードを入れてください" }, 400);

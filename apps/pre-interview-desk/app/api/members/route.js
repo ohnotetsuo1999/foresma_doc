@@ -12,9 +12,9 @@ export const POST = route(async req => {
   const role = b.role === "admin" ? "admin" : "agent", pw = String(b.password || "");
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw bad("メールアドレスが正しくありません");
   if (!name) throw bad("名前を入れてください");
-  if (pw.length < 10) throw bad("パスワードは10文字以上にしてください");
+  if (pw && pw.length < 10) throw bad("パスワードは10文字以上にしてください（Googleログインだけなら空欄）");
   try {
-    const [m] = await desk("insert into desk_members (email, name, role, company, password_hash) values ($1, $2, $3, $4, $5) returning id::text", [email, name, role, company, await hashPassword(pw)]);
+    const [m] = await desk("insert into desk_members (email, name, role, company, password_hash) values ($1, $2, $3, $4, $5) returning id::text", [email, name, role, company, pw ? await hashPassword(pw) : null]);
     return json({ ok: true, id: m.id });
   } catch (e) { if (e.code === "23505") throw bad("このメールアドレスはすでに登録されています"); throw e; }
 }, { admin: true });
