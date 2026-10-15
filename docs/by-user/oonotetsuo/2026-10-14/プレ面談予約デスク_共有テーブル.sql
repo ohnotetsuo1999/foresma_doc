@@ -73,7 +73,23 @@ create table if not exists public.desk_settings (
 );
 comment on table public.desk_settings is 'プレ面談予約デスク: 共有設定（line_add_url など）';
 
--- 公開キー（anon）からは読み書きさせない。画面は各自のSupabase接続（サービス権限）で読み書きする
+-- ログインできるメンバー（スイッチ社の架電担当・foresmaの管理者）
+create table if not exists public.desk_members (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  name text not null,                    -- 画面と記録に出る名前（例：スイッチ 荒木）
+  role text not null default 'agent' check (role in ('agent','admin')),
+  company text,
+  password_hash text not null,           -- scrypt
+  active boolean not null default true,
+  last_login_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists desk_members_email_idx on public.desk_members (lower(email));
+comment on table public.desk_members is 'プレ面談予約デスク: アプリにログインできるメンバー';
+alter table public.desk_members enable row level security;
+
+-- 公開キー（anon）からは読み書きさせない。アプリはサーバー側の接続文字列（DESK_DATABASE_URL）で読み書きする
 alter table public.desk_bookings   enable row level security;
 alter table public.desk_call_logs  enable row level security;
 alter table public.desk_slot_holds enable row level security;

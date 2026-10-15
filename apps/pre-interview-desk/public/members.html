@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow">
+<title>メンバー管理｜プレ面談予約デスク</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>:root{--bg:#f3f5f7;--surface:#fff;--sunk:#e9edf1;--line:#d5dce3;--ink:#18222e;--muted:#5b6876;--accent:#0b6b73;--accent-ink:#fff;--crit:#b4232c;--crit-soft:#fbe0e1;--ok:#17803d;--ok-soft:#dcf2e3;
+  --font-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;--font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme: dark){:root{--bg:#11171d;--surface:#18212a;--sunk:#0d1318;--line:#2c3843;--ink:#e4eaf0;--muted:#97a5b3;--accent:#4fb8c0;--accent-ink:#06282b;--crit:#f17a80;--crit-soft:#3d1a1d;--ok:#5fcf86;--ok-soft:#14321f;color-scheme:dark}}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.6}
+input,select,button{font:inherit;color:inherit} [hidden]{display:none!important}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font-size:14px}
+.btn{border:1px solid var(--line);background:var(--surface);padding:9px 16px;border-radius:6px;cursor:pointer;font-weight:500}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)} .btn.sm{padding:4px 10px;font-size:12px}
+.err{background:var(--crit-soft);color:var(--crit);padding:8px 12px;border-radius:6px;font-size:13px}
+.ok{background:var(--ok-soft);color:var(--ok);padding:8px 12px;border-radius:6px;font-size:13px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:960px;margin:0 auto;padding:24px max(16px,env(safe-area-inset-left,0px))}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px} header h1{font-size:20px;margin:0} header a{margin-left:auto;color:var(--accent)}
+section{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+h2{font-size:15px;margin:0 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:end}
+.tbl{overflow-x:auto} table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap} th{font-size:11px;color:var(--muted);font-weight:500}
+.pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--sunk);color:var(--muted)} .pill.on{background:var(--ok-soft);color:var(--ok)}
+.mono{font-family:var(--font-mono);font-size:12px}
+</style></head>
+<body><div class="wrap">
+<header><h1>メンバー管理</h1><a href="/">← 予約デスクへ</a></header>
+<section>
+  <h2>メンバーを追加</h2>
+  <form id="add" class="grid" autocomplete="off">
+    <label>名前（画面と記録に出ます）<input id="m-name" placeholder="スイッチ 荒木" required></label>
+    <label>会社<input id="m-company" placeholder="スイッチ"></label>
+    <label>メールアドレス<input id="m-email" type="email" required></label>
+    <label>初期パスワード（10文字以上）<input id="m-pw" type="text" minlength="10" required></label>
+    <label>権限<select id="m-role"><option value="agent">架電担当</option><option value="admin">管理者</option></select></label>
+    <button class="btn primary" type="submit">追加する</button>
+  </form>
+  <div id="msg" hidden style="margin-top:10px"></div>
+</section>
+<section>
+  <h2>メンバー一覧</h2>
+  <div class="tbl"><table><thead><tr><th>名前</th><th>会社</th><th>メール</th><th>権限</th><th>状態</th><th>最終ログイン</th><th></th></tr></thead><tbody id="list"><tr><td colspan="7">読み込み中…</td></tr></tbody></table></div>
+</section>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const show = (text, ok) => { const m = $("msg"); m.className = ok ? "ok" : "err"; m.textContent = text; m.hidden = false; };
+async function api(path, opts) {
+  const r = await fetch(path, Object.assign({headers:{"Content-Type":"application/json"}}, opts));
+  if (r.status === 401) { location.href = "/login"; return {}; }
+  if (r.status === 403) { document.body.innerHTML = '<div class="wrap"><p class="err">管理者だけが使えるページです。</p><p><a href="/">予約デスクへ戻る</a></p></div>'; throw new Error("forbidden"); }
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || "エラーが起きました"); return j;
+}
+async function load() {
+  const { members = [] } = await api("/api/members");
+  $("list").innerHTML = members.map(m => '<tr><td>'+esc(m.name)+'</td><td>'+esc(m.company)+'</td><td class="mono">'+esc(m.email)+'</td><td>'+(m.role==="admin"?"管理者":"架電担当")+'</td><td><span class="pill '+(m.active?"on":"")+'">'+(m.active?"有効":"無効")+'</span></td><td>'+(m.last_login_at ? new Date(m.last_login_at).toLocaleString("ja-JP") : "-")+'</td><td><button class="btn sm" data-toggle="'+m.id+'" data-active="'+m.active+'">'+(m.active?"無効にする":"有効にする")+'</button> <button class="btn sm" data-pw="'+m.id+'">パスワード再発行</button></td></tr>').join("") || '<tr><td colspan="7">まだいません</td></tr>';
+}
+$("add").addEventListener("submit", async e => {
+  e.preventDefault();
+  try { await api("/api/members", {method:"POST", body: JSON.stringify({name:$("m-name").value, company:$("m-company").value, email:$("m-email").value, password:$("m-pw").value, role:$("m-role").value})});
+    show("追加しました。メールアドレスと初期パスワードを本人に伝えてください。", true); e.target.reset(); load(); } catch (x) { show(x.message, false); }
+});
+document.addEventListener("click", async e => {
+  const t = e.target.closest("[data-toggle]"), p = e.target.closest("[data-pw]");
+  try {
+    if (t) { await api("/api/members", {method:"PATCH", body: JSON.stringify({id:t.dataset.toggle, active: t.dataset.active !== "true"})}); show("変更しました", true); load(); }
+    if (p) { const pw = Array.from(crypto.getRandomValues(new Uint8Array(9)), b => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("") + "-" + Math.floor(100+Math.random()*900);
+      await api("/api/members", {method:"PATCH", body: JSON.stringify({id:p.dataset.pw, password: pw})}); show("新しいパスワード：" + pw + "（本人に伝えてください。この画面を閉じると再表示できません）", true); }
+  } catch (x) { show(x.message, false); }
+});
+load().catch(x => x.message !== "forbidden" && show(x.message, false));
+</script>
+</body></html>

@@ -1,0 +1,1281 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>プレ面談予約デスク</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px}
+[hidden]{display:none!important}
+
+/* Layout: 架電中に左→右へ進む作業台（左＝本人確認、右＝枠と送客FMT）。スマホでは縦に積む */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --sunk:#e9edf1; --line:#d5dce3;
+  --ink:#18222e; --muted:#5b6876;
+  --accent:#0b6b73; --accent-ink:#ffffff; --accent-soft:#d9eef0;
+  --ok:#17803d; --ok-soft:#dcf2e3; --warn:#a15c00; --warn-soft:#fdecd2; --crit:#b4232c; --crit-soft:#fbe0e1;
+  --font-body:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --chat-bg:#c6d6e4;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171d; --surface:#18212a; --sunk:#0d1318; --line:#2c3843;
+  --ink:#e4eaf0; --muted:#97a5b3;
+  --accent:#4fb8c0; --accent-ink:#06282b; --accent-soft:#16383c;
+  --ok:#5fcf86; --ok-soft:#14321f; --warn:#f0aa4c; --warn-soft:#3a2a12; --crit:#f17a80; --crit-soft:#3d1a1d;
+  --chat-bg:#22303d;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171d; --surface:#18212a; --sunk:#0d1318; --line:#2c3843;
+  --ink:#e4eaf0; --muted:#97a5b3;
+  --accent:#4fb8c0; --accent-ink:#06282b; --accent-soft:#16383c;
+  --ok:#5fcf86; --ok-soft:#14321f; --warn:#f0aa4c; --warn-soft:#3a2a12; --crit:#f17a80; --crit-soft:#3d1a1d;
+  --chat-bg:#22303d;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.6}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;flex-direction:column;line-height:1.25}
+.brand b{font-size:16px;letter-spacing:.02em}
+.brand span{font-size:11px;color:var(--muted);letter-spacing:.06em}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{border:0;background:transparent;padding:6px 12px;border-radius:999px;cursor:pointer;color:var(--muted);font-weight:500}
+.tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent)}
+.tab .cnt{display:inline-block;min-width:18px;margin-left:4px;padding:0 5px;border-radius:999px;background:var(--crit);color:#fff;font-size:11px;line-height:18px;text-align:center}
+.op{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);white-space:nowrap}
+.op select{padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+
+.wrap{padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1320px;margin:0 auto}
+.sample{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:14px}
+.sample .pill{background:var(--warn-soft);color:var(--warn)}
+.linkbtn{border:0;background:none;color:var(--accent);cursor:pointer;padding:0;text-decoration:underline}
+
+.desk{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px;align-items:start}
+@media (max-width:960px){.desk{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+.ph{display:flex;align-items:baseline;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.ph .step{font-family:var(--font-mono);font-size:12px;color:var(--accent);font-weight:600}
+.ph h2{margin:0;font-size:15px;text-wrap:balance}
+.ph .sub{margin-left:auto;font-size:12px;color:var(--muted)}
+.pb{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.panel.locked .pb{opacity:.5;pointer-events:none}
+.hint{font-size:12px;color:var(--muted);margin:0}
+
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+label.f>span b{color:var(--crit);font-weight:500;margin-left:2px}
+input[type=text],input[type=tel],input[type=date],input[type=datetime-local],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font-size:14px}
+textarea{min-height:84px;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.row>*{flex:1 1 160px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+
+.btn{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--sunk)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{color:var(--crit);border-color:var(--crit)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn.sm{padding:4px 10px;font-size:12px}
+.flex0{flex:0 0 auto!important}
+
+.pill{display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:500;white-space:nowrap;background:var(--sunk);color:var(--muted)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.crit{background:var(--crit-soft);color:var(--crit)}
+.pill.acc{background:var(--accent-soft);color:var(--accent)}
+
+/* user hits */
+.hits{display:flex;flex-direction:column;gap:8px}
+.hit{display:grid;grid-template-columns:1fr auto;gap:4px 10px;text-align:left;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:var(--surface);cursor:pointer}
+.hit:hover{border-color:var(--accent)}
+.hit[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
+.hit .nm{font-weight:700;font-size:15px}
+.hit .meta{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}
+.hit .tags{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13px;margin:0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+
+.verdict{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:var(--r);font-size:13px}
+.verdict .ic{font-family:var(--font-mono);font-weight:600;font-size:16px;line-height:1.3}
+.verdict.ok{background:var(--ok-soft);color:var(--ok)}
+.verdict.warn{background:var(--warn-soft);color:var(--warn)}
+.verdict.crit{background:var(--crit-soft);color:var(--crit)}
+.verdict.none{background:var(--sunk);color:var(--muted)}
+.verdict p{margin:0}
+.verdict p+p{margin-top:2px;font-size:12px;opacity:.9}
+
+.alerts{display:flex;flex-direction:column;gap:6px}
+.alert{display:flex;gap:8px;font-size:12px;padding:6px 10px;border-radius:6px;border-left:3px solid currentColor}
+.alert.warn{background:var(--warn-soft);color:var(--warn)}
+.alert.crit{background:var(--crit-soft);color:var(--crit)}
+.alert.info{background:var(--sunk);color:var(--muted)}
+
+/* proposals */
+.mini{margin:0;font-size:13px}
+.bands{display:flex;gap:4px;flex-wrap:wrap}
+.band{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer}
+.band[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.props{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.prop{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:var(--surface);cursor:pointer}
+.prop:hover{border-color:var(--accent)}
+.prop .d{font-size:12px;color:var(--muted)}
+.prop .tm{font-family:var(--font-mono);font-size:18px;font-weight:600;line-height:1.2}
+.prop .ft{display:flex;gap:4px;align-items:center;font-size:11px}
+.prop.sel{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.prop.sel .d{color:var(--accent-ink)}
+/* confirmation previews */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card .cap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;font-weight:700}
+.chat{background:var(--chat-bg);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.bubble{background:var(--surface);color:var(--ink);border-radius:14px 14px 14px 4px;padding:10px 12px;font-size:12.5px;white-space:pre-wrap;word-break:break-word;max-width:100%}
+.chat .time{font-size:10px;color:var(--muted)}
+.rem{display:flex;flex-wrap:wrap;gap:4px}
+/* ask-time checker */
+.ask{background:var(--sunk);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px}
+.ask h3{margin:0;font-size:13px}
+.ans{font-size:13px}
+
+/* slots */
+.days{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.day{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 10px;cursor:pointer;text-align:center;line-height:1.3}
+.day small{display:block;font-size:11px;color:var(--muted)}
+.day[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.day[aria-selected="true"] small{color:var(--accent-ink);opacity:.85}
+.slots{display:flex;flex-direction:column;gap:6px}
+.hr{display:grid;grid-template-columns:44px 1fr;gap:8px;align-items:center}
+.hr>.h{font-family:var(--font-mono);font-size:12px;color:var(--muted);text-align:right}
+.hr>.cells{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.slot{border:1px solid var(--line);border-radius:6px;padding:5px 4px;background:var(--surface);cursor:pointer;display:flex;flex-direction:column;align-items:center;line-height:1.2}
+.slot .t{font-family:var(--font-mono);font-size:13px;font-weight:600}
+.slot .c{font-size:10px}
+.slot.many .c{color:var(--ok)}
+.slot.few{border-color:var(--warn)}
+.slot.few .c{color:var(--warn)}
+.slot.full,.slot.past{background:var(--sunk);color:var(--muted);cursor:not-allowed;border-style:dashed}
+.slot.sel{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.slot.sel .c{color:var(--accent-ink)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px;border:1px solid var(--line)}
+
+.holdbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 12px;border-radius:var(--r);background:var(--accent-soft);color:var(--accent)}
+.holdbar b{font-size:15px}
+.holdbar .timer{font-family:var(--font-mono);font-weight:600;margin-left:auto}
+
+.script{position:relative;background:var(--sunk);border-radius:var(--r);padding:10px 12px;font-size:13px}
+.script .lbl{font-size:11px;color:var(--muted);letter-spacing:.06em}
+
+details.sec{border:1px solid var(--line);border-radius:var(--r)}
+details.sec>summary{cursor:pointer;padding:8px 12px;font-weight:500;font-size:13px;list-style:none;display:flex;gap:8px;align-items:center}
+details.sec>summary::before{content:"＋";font-family:var(--font-mono);color:var(--accent)}
+details.sec[open]>summary::before{content:"－"}
+details.sec>.in{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:6px 12px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+
+.outcomes{display:flex;flex-wrap:wrap;gap:6px}
+pre.out{margin:0;white-space:pre-wrap;word-break:break-word;background:var(--sunk);border-radius:var(--r);padding:12px;font-family:var(--font-body);font-size:12.5px;max-height:320px;overflow:auto}
+
+.done{border:1px solid var(--ok);background:var(--ok-soft);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.done h3{margin:0;color:var(--ok);font-size:15px}
+
+/* tables */
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;white-space:nowrap}
+th{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.04em}
+tr.over td{background:var(--crit-soft)}
+tr.soon td{background:var(--warn-soft)}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+
+/* heatmap */
+.heat{display:grid;gap:3px;font-size:11px}
+.heat .hd{color:var(--muted);text-align:center;font-family:var(--font-mono)}
+.heat .rl{color:var(--muted);text-align:right;padding-right:6px;font-family:var(--font-mono)}
+.heat .cell{border-radius:4px;height:26px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:600}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:13px;z-index:50;max-width:calc(100% - 32px)}
+.empty{padding:24px;text-align:center;color:var(--muted);font-size:13px}
+.confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px}
+@media (prefers-reduced-motion:no-preference){.slot,.hit,.btn{transition:background .12s,border-color .12s}}
+
+/* v3 additions */
+:root{--fx-green:#00a845;--fx-soft:#e6f7ee;--fx-link:#0067c0}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--fx-green:#3ddc7e;--fx-soft:#143323;--fx-link:#6cb4ff}}
+:root[data-theme="dark"]{--fx-green:#3ddc7e;--fx-soft:#143323;--fx-link:#6cb4ff}
+.conn{display:inline-flex;align-items:center;gap:6px;font-size:12px}
+.conn i{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.conn.live i{background:var(--ok)}
+.conn.err i{background:var(--crit)}
+.banner{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:14px;padding:10px 12px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line)}
+.banner.live{border-color:var(--ok)}
+.banner b{color:var(--ink)}
+.idcard{display:flex;flex-direction:column;gap:2px;padding:12px;border-radius:var(--r);background:var(--sunk)}
+.idcard .big{font-size:20px;font-weight:700;line-height:1.3}
+.idcard .sm{font-size:12px;color:var(--muted)}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px}
+.flexmsg{background:var(--surface);border-radius:14px;overflow:hidden;max-width:300px;width:100%;font-size:12.5px;color:var(--ink)}
+.fx-hero{background:var(--fx-green);color:#fff;text-align:center;font-weight:700;font-size:15px;padding:12px}
+.fx-head,.fx-foot{padding:12px 14px;line-height:1.7}
+.fx-head u{text-decoration:underline}
+.fx-box{margin:0 12px;border:1px solid var(--fx-green);background:var(--fx-soft);border-radius:4px;padding:8px 12px 10px;font-weight:700;display:flex;flex-direction:column}
+.fx-box .k{margin-top:6px}
+.fx-box .v{font-weight:700}
+.fx-box .note{font-size:11px;color:var(--fx-link);margin-top:6px;white-space:pre-line}
+.fx-foot .em{color:var(--fx-green);font-weight:700;text-decoration:underline}
+.sms{display:flex;flex-direction:column;gap:8px;border:1px dashed var(--warn);border-radius:var(--r);padding:12px;background:var(--warn-soft)}
+.sms h3{margin:0;font-size:13px;color:var(--warn)}
+.sms textarea{min-height:110px;font-size:13px}
+.sms .meta{font-size:11px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.tossup{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;font-size:12px;display:flex;flex-direction:column;gap:4px}
+.tossup .hd{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-weight:700}
+.tossup p{margin:0;color:var(--muted);white-space:pre-wrap}
+code.sql{display:block;white-space:pre-wrap;word-break:break-all;font-family:var(--font-mono);font-size:11px;background:var(--sunk);border-radius:6px;padding:10px;max-height:240px;overflow:auto}
+.settings{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.settings label{flex:1 1 280px}
+.loading{color:var(--muted);font-size:12px}
+/* v4: calendar, tossup, memo */
+:root{--cal-many:#e3f3ea}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--cal-many:#173527}}
+:root[data-theme="dark"]{--cal-many:#173527}
+.verdict.acc{background:var(--accent-soft);color:var(--accent)}
+.calwrap{overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:var(--r)}
+.cal{display:grid;min-width:520px;gap:0}
+.cal .ch{position:sticky;top:0;z-index:2;background:var(--surface);border-bottom:1px solid var(--line);padding:6px 2px;text-align:center;font-size:12px;font-weight:700;line-height:1.3}
+.cal .ch small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.cal .ch.we{color:var(--accent)}
+.cal .ct{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:right;padding:2px 6px 0 0;border-top:1px solid var(--line);background:var(--surface);position:sticky;left:0;z-index:1}
+.cal .ct.half{border-top:1px dashed var(--line)}
+.cal .cc{min-height:34px;border:0;border-top:1px solid var(--line);border-left:1px solid var(--line);background:var(--surface);font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;padding:2px;cursor:pointer;color:var(--ink)}
+.cal .cc.half{border-top-style:dashed}
+.cal .cc .tt{font-family:var(--font-mono);font-size:10px;color:var(--muted)}
+.cal .cc.many{background:var(--cal-many);color:var(--ok);font-weight:700}
+.cal .cc.few{background:var(--warn-soft);color:var(--warn);font-weight:700}
+.cal .cc.full,.cal .cc.past{background:var(--sunk);color:var(--muted);cursor:not-allowed}
+.cal .cc.none{background:var(--bg);cursor:default}
+.cal .cc.sel{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.cal .cc.sel .tt{color:var(--accent-ink)}
+.cal .cc:not(:disabled):not(.none):hover{outline:2px solid var(--accent);outline-offset:-2px}
+td.memo{white-space:normal;min-width:180px;max-width:320px;font-size:12px;color:var(--muted)}
+.seg button:disabled{opacity:.6;cursor:not-allowed}
+.hubsteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.hubsteps li{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><b>プレ面談予約デスク</b><span>出会えるエージェント × 架電代行（スイッチ社）</span></div>
+    <nav class="tabs" role="tablist" aria-label="画面切替">
+      <button class="tab" role="tab" id="tab-call" data-view="call" aria-selected="true">架電・予約</button>
+      <button class="tab" role="tab" id="tab-recall" data-view="recall">再電話リスト<span class="cnt" id="recall-cnt" hidden>0</span></button>
+      <button class="tab" role="tab" id="tab-toss" data-view="toss">トスアップ待ち<span class="cnt" id="toss-cnt" hidden>0</span></button>
+      <button class="tab" role="tab" id="tab-list" data-view="list">Hubの予約一覧</button>
+      <button class="tab" role="tab" id="tab-cap" data-view="cap">空き状況</button>
+    </nav>
+    <div class="op">
+      <span class="conn" id="conn"><i></i><span id="conn-text">接続を確認中</span></span>
+      <span id="me-name" style="color:var(--ink);font-weight:700"></span>
+      <a href="/members" id="members-link" hidden style="color:var(--accent)">メンバー管理</a>
+      <button type="button" class="btn sm" id="logout">ログアウト</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="banner" id="banner"><span class="loading">Supabase（LREACH Hub）への接続を確認しています…</span></div>
+
+  <section id="view-call">
+    <div class="desk">
+      <div class="col">
+        <section class="panel" aria-labelledby="h1">
+          <div class="ph"><span class="step">STEP 1</span><h2 id="h1">ユーザーを特定する</h2><span class="sub">電話番号で検索</span></div>
+          <div class="pb">
+            <form id="search" class="row" autocomplete="off">
+              <label class="f"><span>電話番号（ハイフン有無・下4桁どちらでも）</span><input type="tel" id="q" inputmode="tel" placeholder="090-1234-5678"></label>
+              <button class="btn primary flex0" type="submit" id="search-btn">検索</button>
+            </form>
+            <div id="hits" class="hits"></div>
+          </div>
+        </section>
+
+        <section class="panel" id="p-verify" aria-labelledby="h2">
+          <div class="ph"><span class="step">STEP 2</span><h2 id="h2">本人確認</h2><span class="sub">登録名を読み上げて確認</span></div>
+          <div class="pb" id="verify"></div>
+        </section>
+      </div>
+
+      <div class="col">
+        <section class="panel" id="p-slot" aria-labelledby="h3">
+          <div class="ph"><span class="step">STEP 3</span><h2 id="h3">空いている枠を提案して押さえる</h2><span class="sub" id="slot-sub">自社IS枠から「ここどうですか？」</span></div>
+          <div class="pb">
+            <div class="row" style="align-items:center;justify-content:space-between">
+              <div class="seg flex0" id="slotview" aria-label="表示の切り替え"><button type="button" data-sv="pick" aria-pressed="true">おすすめ枠</button><button type="button" data-sv="cal" aria-pressed="false">カレンダー</button></div>
+              <div class="bands flex0" id="bands" aria-label="時間帯で絞る">
+                <button type="button" class="band" data-band="all" aria-pressed="true">すべて</button>
+                <button type="button" class="band" data-band="am" aria-pressed="false">午前</button>
+                <button type="button" class="band" data-band="pm" aria-pressed="false">午後</button>
+                <button type="button" class="band" data-band="ev" aria-pressed="false">夜</button>
+                <button type="button" class="band" data-band="we" aria-pressed="false">土日</button>
+              </div>
+            </div>
+            <div class="script" id="script"></div>
+            <div id="pick-view">
+              <div class="props" id="props"></div>
+              <p class="hint" style="margin-top:8px">ユーザーが「いいですよ」と言った枠を押すと、5分間の仮押さえになります。時間帯を言われたら右上のボタンで絞り込めます。</p>
+            </div>
+            <div id="cal-view" hidden>
+              <div class="legend"><span><i style="background:var(--cal-many)"></i>空き2名以上</span><span><i style="background:var(--warn-soft);border-color:var(--warn)"></i>残り1名</span><span><i style="background:var(--sunk)"></i>満枠・受付終了</span><span>1マス＝30分。数字は空いているISの人数</span></div>
+              <div class="calwrap"><div class="cal" id="cal"></div></div>
+            </div>
+            <details class="sec">
+              <summary>ユーザーから日時を指定されたら</summary>
+              <div class="in">
+                <div class="row">
+                  <label class="f"><span>希望日時</span><input type="datetime-local" id="ask-at" step="1800"></label>
+                  <button class="btn flex0" id="ask-btn" type="button">空きを確認</button>
+                </div>
+                <div class="ans" id="ask-ans"><p class="hint">その時間が空いているかをすぐ確認します。埋まっていれば近い空きを出します。</p></div>
+              </div>
+            </details>
+            <div id="hold"></div>
+          </div>
+        </section>
+
+        <section class="panel" id="p-fmt" aria-labelledby="h4">
+          <div class="ph"><span class="step">STEP 4</span><h2 id="h4">予約を確定する</h2><span class="sub">トスアップ内容はあとからでも入れられます</span></div>
+          <div class="pb" id="fmt-body">
+            <form id="fmt" autocomplete="off" class="pb" style="padding:0">
+              <div id="toss-head"></div>
+              <details class="sec" id="paste-sec">
+                <summary>送客FMTを貼り付けて読み込む</summary>
+                <div class="in">
+                  <label class="f"><span>「【送客FMT】」から「【その他】」までをそのまま貼り付け</span><textarea id="paste" placeholder="【送客FMT】&#10;エージェント面談候補日程：&#10;面談方法：&#10;&#10;名前　　　：&#10;ふりがな　：&#10;…"></textarea></label>
+                  <div class="row"><p class="hint" id="paste-msg" style="flex:1 1 200px">各項目を下の入力欄に振り分けます。空の項目は上書きしません。</p><button type="button" class="btn flex0" id="paste-btn">読み込む</button></div>
+                </div>
+              </details>
+              <div class="row">
+                <div class="flex0"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">面談方法<b style="color:var(--crit);font-weight:500">*</b></div>
+                  <div class="seg" id="method"><button type="button" data-v="電話" aria-pressed="true">電話</button><button type="button" data-v="オンライン" aria-pressed="false">オンライン</button></div>
+                </div>
+              </div>
+              <div class="grid2">
+                <label class="f"><span>名前<b>*</b></span><input type="text" id="f-name"></label>
+                <label class="f"><span>ふりがな<b>*</b></span><input type="text" id="f-kana"></label>
+                <label class="f"><span>性別</span><select id="f-sex"><option></option><option>男性</option><option>女性</option><option>回答なし</option></select></label>
+                <label class="f"><span>生年月日<b>*</b></span><input type="date" id="f-birth"></label>
+                <label class="f"><span>電話番号</span><input type="tel" id="f-phone" readonly></label>
+                <label class="f"><span>アドレス</span><input type="text" id="f-mail" value="公式LINE送付済み"></label>
+                <label class="f"><span>お住まい<b>*</b></span><input type="text" id="f-home"></label>
+                <label class="f"><span>希望勤務地(都道府県)<b>*</b></span><input type="text" id="f-area"></label>
+              </div>
+              <div class="grid2">
+                <label class="f"><span>お子様確認</span><select id="f-child"><option>なし</option><option>あり（就業制限なし）</option><option>あり（就業制限あり）</option></select></label>
+                <label class="f"><span>既往歴確認<b>*</b></span><select id="f-med"><option>なし</option><option>あり</option></select></label>
+                <label class="f"><span>転職希望時期<b>*</b></span><input type="text" id="f-timing" placeholder="3カ月以内 など"></label>
+              </div>
+              <div id="fmt-alerts" class="alerts"></div>
+              <p class="hint" id="toss-hint">ここから下はトスアップ（送客FMT）の項目です。予約のあとで「トスアップ待ち」から入れても大丈夫です。</p>
+              <details class="sec" id="sec-career">
+                <summary>経歴・希望条件（わかる範囲で）</summary>
+                <div class="in grid2">
+                  <label class="f"><span>最終学歴</span><input type="text" id="f-edu"></label>
+                  <label class="f"><span>就業中/離職中</span><select id="f-emp"><option></option><option>就業中</option><option>離職中</option></select></label>
+                  <label class="f"><span>直近の雇用形態</span><select id="f-type"><option></option><option>正社員</option><option>契約社員</option><option>派遣社員</option><option>アルバイト・パート</option><option>その他</option></select></label>
+                  <label class="f"><span>経験社数（正社員として）</span><input type="text" id="f-cos" placeholder="2社"></label>
+                  <label class="f"><span>正社員の年数</span><input type="text" id="f-years" placeholder="3年"></label>
+                  <label class="f"><span>現在の職種</span><input type="text" id="f-job"></label>
+                  <label class="f"><span>希望職種</span><input type="text" id="f-want"></label>
+                  <label class="f"><span>NG職種</span><input type="text" id="f-ng"></label>
+                  <label class="f"><span>現年収</span><input type="text" id="f-inc" placeholder="350万円"></label>
+                  <label class="f"><span>希望年収（最低金額）</span><input type="text" id="f-winc" placeholder="400万円以上"></label>
+                </div>
+              </details>
+              <details class="sec" id="sec-comment">
+                <summary>紹介コメント・使用中エージェント・その他</summary>
+                <div class="in">
+                  <label class="f"><span>紹介コメント</span><textarea id="f-comment" placeholder="経歴・希望・転職理由を2〜4文で"></textarea></label>
+                  <label class="f"><span>使用中エージェント</span><input type="text" id="f-agents" placeholder="なし"></label>
+                  <label class="f"><span>その他</span><input type="text" id="f-other"></label>
+                </div>
+              </details>
+              <div class="row">
+                <p class="hint" id="fmt-gate" style="flex:1 1 220px"></p>
+                <button class="btn flex0" id="toss-cancel" type="button" hidden>閉じる</button>
+                <button class="btn primary flex0" id="book" type="submit">予約を確定する</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="h5">
+          <div class="ph"><span class="step">別の結果</span><h2 id="h5">予約に至らなかった場合</h2><span class="sub">#面談調整-スイッチさん への報告</span></div>
+          <div class="pb">
+            <div class="outcomes" id="outcomes">
+              <button class="btn sm" data-o="再電話">再電話</button>
+              <button class="btn sm" data-o="既往歴">既往歴</button>
+              <button class="btn sm" data-o="時期NG">時期NG</button>
+              <button class="btn sm" data-o="不通">不通</button>
+              <button class="btn sm" data-o="対象外">対象外（その他）</button>
+            </div>
+            <div id="outcome-form"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-recall" hidden>
+    <section class="panel">
+      <div class="ph"><h2>再電話リスト</h2><span class="sub" id="recall-sub"></span></div>
+      <div class="tblwrap"><table><thead><tr><th>再電話日時</th><th>名前</th><th>電話番号</th><th>メモ</th><th>登録した人</th><th>状態</th><th></th></tr></thead><tbody id="recall-body"></tbody></table></div>
+      <div class="pb"><p class="hint">再電話リストは、いまはこのブラウザの中だけに保存されます。ログイン機能と合わせて、スイッチ社の全員で共有できるようにします。</p></div>
+    </section>
+  </section>
+
+  <section id="view-toss" hidden>
+    <section class="panel">
+      <div class="ph"><h2>トスアップ待ち</h2><span class="sub" id="toss-sub"></span></div>
+      <div class="tblwrap"><table><thead><tr><th>予約日時</th><th>名前</th><th>電話番号</th><th>予約した人</th><th>トスアップ</th><th></th></tr></thead><tbody id="toss-body"></tbody></table></div>
+      <div class="pb"><p class="hint">予約だけ先に確定した人の一覧です。「トスアップする」から送客FMTを入れる（貼り付けも可）と、Slack用の文面ができます。いまはこのブラウザの中だけに保存されます。</p></div>
+    </section>
+  </section>
+
+  <section id="view-list" hidden>
+    <section class="panel">
+      <div class="ph"><h2>Hubに登録されているスイッチ経由のプレ面談</h2><button class="btn sm" id="list-reload" style="margin-left:auto">再読み込み</button></div>
+      <div class="tblwrap"><table><thead><tr><th>日時</th><th>予約者名</th><th>方法</th><th>IS担当</th><th>アポ取得者</th><th>タグ</th><th>状態</th></tr></thead><tbody id="list-body"></tbody></table></div>
+      <div class="pb"><p class="hint" id="list-note">Hubの interview_bookings から、アポ取得者が「スイッチ」またはタグに「スイッチ」を含む予約を新しい順に50件表示します。</p></div>
+    </section>
+  </section>
+
+  <section id="view-cap" hidden>
+    <section class="panel">
+      <div class="ph"><h2>今後7日間の空き枠</h2><span class="sub" id="cap-sub">1時間あたりの予約可能枠数</span></div>
+      <div class="pb"><div class="tblwrap"><div class="heat" id="heat"></div></div>
+      <p class="hint">セルを押すとその日時の枠選択に移動します。数字は1時間（30分枠×2）で空いているISの延べ人数です。</p></div>
+    </section>
+  </section>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- 設定（Hubの実値） ---------- */
+const HUB = "etfnbkrneepqkgdnpmru";          // LREACH Hub
+const REV = "xgfhmyuvdtwbqjtyumre";          // tossup_info（Slackトスアップの取込先）
+const MCP_SERVER = "supabase";
+const SWITCH_STAFF_ID = "e8f6242e-4032-4b50-a336-9d9444bc3710"; // is_staff「スイッチ」
+const FORMS = { "電話": {id:"787091ef-2a77-435a-ac5a-edd2ac51ac1c", name:"出会えるエージェント エージェント相談(電話)", reminder:8, label:"電話"},
+                "オンライン": {id:"35c8040f-b366-4749-80e8-d8b01ba96389", name:"出会えるエージェント エージェント相談(オンライン面談)", reminder:9, label:"オンライン面談"} };
+const HUB_TAG = "架電代行_スイッチ";
+const STATUS = {null:"日程確定", 7:"面談日程調整中", 10:"再面談日程調整中", 11:"再面談日程確定", 12:"面談実施", 13:"面談未実施"};
+const MEET_MIN = 15;  /* 出会えるエージェントの予約フォームと同じ面談時間 */
+const SLOT_MIN = 30, OPEN_H = 9, CLOSE_H = 23, LEAD_MIN = 30, HOLD_SEC = 300, DAYS = 7;
+const WD = ["日","月","火","水","木","金","土"];
+const STORE = "preint-desk-v3";
+
+const pad = n => String(n).padStart(2,"0");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = id => document.getElementById(id);
+const startOfDay = d => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+const addMin = (d,m) => new Date(d.getTime() + m*60000);
+const fmtT = d => pad(d.getHours())+":"+pad(d.getMinutes());
+const fmtD = d => (d.getMonth()+1)+"/"+d.getDate()+"("+WD[d.getDay()]+")";
+const jpDate = d => (d.getMonth()+1)+"月"+d.getDate()+"日（"+WD[d.getDay()]+"）";
+const fmtSlack = d => d.getFullYear()+"/"+pad(d.getMonth()+1)+"/"+pad(d.getDate())+" "+fmtT(d);
+const dayLabel = d => { const diff = Math.round((startOfDay(d)-startOfDay(new Date()))/864e5); return diff===0?"今日":diff===1?"明日":diff===2?"明後日":fmtD(d); };
+const dayFull = d => dayLabel(d)===fmtD(d) ? fmtD(d) : dayLabel(d)+" "+fmtD(d);
+const fmtPhone = p => !p ? "" : p.length===11 ? p.slice(0,3)+"-"+p.slice(3,7)+"-"+p.slice(7) : p.length===10 ? p.slice(0,2)+"-"+p.slice(2,6)+"-"+p.slice(6) : p;
+const toLocalInput = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+fmtT(d);
+const slotKey = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+fmtT(d);
+const sqlStr = s => "'"+String(s ?? "").replace(/'/g,"''")+"'";
+const isUuid = s => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s));
+function normPhone(s){
+  let d = String(s||"").normalize("NFKC").replace(/\D/g,"");
+  if (d.startsWith("81") && (d.length===11 || d.length===12)) d = "0"+d.slice(2);
+  return d;
+}
+function normName(s){
+  return String(s||"").normalize("NFKC").replace(/[\s　・]/g,"")
+    .replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0)-0x60));
+}
+const today0 = () => startOfDay(new Date());
+const at = (dayOff,h,m) => { const d = today0(); d.setDate(d.getDate()+dayOff); d.setHours(h,m||0,0,0); return d; };
+
+/* ---------- 状態 ---------- */
+const ls = {
+  get(k, d){ try { const v = localStorage.getItem(STORE+":"+k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(STORE+":"+k, JSON.stringify(v)); } catch(e){} }
+};
+const data = {
+  mode: "connecting",        // connecting | live | demo
+  slots: {},                 // key -> {available, staff:[names]}
+  slotsAt: null,
+  staff: [],                 // [{id,name,priority}]
+  hubList: null, hubListErr: null, hubWrite: null,
+  error: null
+};
+const st = { logs: ls.get("logs", []), drafts: ls.get("drafts", []), lineUrl: ls.get("lineUrl", ""), holds: [] };
+const ui = { user:null, hits:[], q:"", searching:false, searchErr:null, confirmed:false, mismatch:false, mismatchReason:"", spoken:"", birthCheck:"",
+  tossups:null, slotView:"pick", tossFor:null, band:"all", sel:null, hold:null, method:"電話", outcome:null, done:null, view:"call", sms:null };
+const operator = () => (data.me && data.me.name) || "";
+const saveLogs = () => saveLocal();
+
+/* ---------- アプリのAPI（データベースにはサーバーがつなぐ。ブラウザはSQLを持たない） ---------- */
+async function api(path, opts){
+  const o = Object.assign({headers:{}}, opts||{});
+  if (o.body && typeof o.body !== "string"){ o.body = JSON.stringify(o.body); o.headers["Content-Type"] = "application/json"; }
+  let res;
+  try { res = await fetch(path, o); } catch(e){ throw {code:"network", message:"サーバーにつながりません。通信状況を確認してください。"}; }
+  if (res.status === 401){ location.href = "/login"; throw {code:"auth", message:"ログインしてください"}; }
+  let j = {}; try { j = await res.json(); } catch(e){}
+  if (!res.ok) throw {code:"http_"+res.status, status:res.status, message:j.error || "エラーが起きました（"+res.status+"）"};
+  return j;
+}
+function errText(e){ return (e && e.message) || "読み込みに失敗しました"; }
+
+/* ---------- 共有データ（サーバー経由で ohno_project の desk_* に保存） ---------- */
+const store = { mode:"supabase", reason:"", syncedAt:null };
+function rowToBooking(r){
+  return { id:r.id, userId:r.hub_user_id, start:new Date(r.start_at).toISOString(), method:r.method, staff:r.staff_name||"", staffId:r.staff_id||null,
+    by:r.booked_by, createdAt:r.created_at, verifyNote:r.verify_note||"", notice:r.notice||"LINE", hubStatus:r.hub_status, hubBookingId:r.hub_booking_id||null,
+    u:{id:r.hub_user_id, name:r.user_name, phone:r.phone||""}, lineUid:r.line_uid||"",
+    fmt: typeof r.fmt==="string" ? JSON.parse(r.fmt||"{}") : (r.fmt||{}), tossed:!!r.tossed, tossedAt:r.tossed_at, tossedBy:r.tossed_by };
+}
+function rowToLog(r){
+  return { id:r.id, u:{id:r.hub_user_id, name:r.user_name, phone:r.phone||""}, type:r.outcome, by:r.logged_by, at:r.created_at,
+    state:r.call_state||"", pref:r.contact_pref||"", memo:r.memo||"", callbackAt:r.callback_at, done:!!r.done };
+}
+function applyShared(sh){
+  st.drafts = (sh.bookings||[]).map(rowToBooking); st.logs = (sh.logs||[]).map(rowToLog);
+  st.holds = (sh.holds||[]).map(r => ({id:r.id, start:new Date(r.slot_start).toISOString(), by:r.held_by, userId:r.hub_user_id, expires:new Date(r.expires_at).getTime()}));
+  const lu = (sh.settings||[]).find(r => r.key==="line_add_url"); st.lineUrl = lu ? (lu.value||"") : "";
+  store.syncedAt = new Date();
+}
+async function loadShared(){ applyShared(await api("/api/shared")); }
+function saveLocal(){}
+async function persistToss(d){ await api("/api/bookings/toss", {method:"PUT", body:{id:d.id, fmt:d.fmt}}); return true; }
+async function persistLog(log){
+  const r = await api("/api/logs", {method:"POST", body:{hubUserId:log.u.id, userName:log.u.name, phone:log.u.phone, outcome:log.type, callState:log.state, contactPref:log.pref, memo:log.memo, callbackAt:log.callbackAt}});
+  log.id = r.id; return true;
+}
+async function persistSetting(key, value){ try { await api("/api/settings", {method:"PUT", body:{key, value}}); return true; } catch(e){ toast(errText(e)); return false; } }
+async function acquireHold(t){
+  try { const r = await api("/api/holds", {method:"POST", body:{slotStart:t.toISOString(), hubUserId: ui.user ? ui.user.id : ""}}); return {ok:true, id:r.id}; }
+  catch(e){ if (e.status===409) return {ok:false}; toast(errText(e)); return {ok:false}; }
+}
+async function releaseHoldRow(id){ if (id) api("/api/holds?id="+encodeURIComponent(id), {method:"DELETE"}).catch(()=>{}); }
+
+function mapUser(r){
+  const g = String(r.gender||"");
+  return { id:r.uid, lineUid:r.line_uid, name:r.name||"（名前未登録）", line:r.line_name||"", phone:r.phone||"",
+    birth:r.birthday ? String(r.birthday).slice(0,10) : "", sex: /男|^m/i.test(g) ? "男性" : /女|^f/i.test(g) ? "女性" : "",
+    home:r.residence||"", area:r.desired_work_location||"", timing:r.desired_time||"",
+    blocked:!!r.is_blocked, lineAdded: r.is_line_added !== false, inflowAt:r.created_at, phoneDup: Number(r.phone_cnt) > 1,
+    bookings: (r.bookings||[]).map(b => ({start:b.start_at, status:b.status_id, canceled:b.is_canceled, staff:b.staff, tag:b.tag})) };
+}
+
+/* ---------- 読み込み ---------- */
+function applySlots(j){
+  data.slots = {}; Object.keys(j.slots||{}).forEach(k => { const v = j.slots[k]; data.slots[k] = {available:Number(v.available)||0, staff:v.staff||[]}; });
+  data.slotsAt = j.slotsAt ? new Date(j.slotsAt) : null;
+}
+async function boot(){
+  try {
+    const j = await api("/api/bootstrap");
+    data.me = j.me; applySlots(j);
+    data.staff = (j.staff||[]).map(r => ({id:r.id, name:r.name, priority:Number(r.priority)}));
+    applyShared(j.shared);
+    data.mode = "live"; data.error = null;
+    $("me-name").textContent = j.me.name + (j.me.company ? "（"+j.me.company+"）" : "");
+    $("members-link").hidden = j.me.role !== "admin";
+    renderConn(); renderAll(); loadHubList();
+  } catch(e){
+    data.mode = "error"; data.error = errText(e); renderConn();
+  }
+}
+async function reloadSlots(){
+  if (data.mode !== "live") return;
+  try { applySlots(await api("/api/slots")); renderConn(); if (!ui.hold){ renderCal(); renderProposals(); renderHeat(); } }
+  catch(e){ toast("空き枠を更新できませんでした。"+errText(e)); }
+}
+async function loadHubList(){
+  if (data.mode !== "live"){ renderList(); return; }
+  data.hubList = null; data.hubListErr = null; renderList();
+  try { data.hubList = (await api("/api/hub-list")).rows; } catch(e){ data.hubListErr = errText(e); }
+  renderList();
+}
+function renderConn(){
+  const c = $("conn"), t = $("conn-text"), b = $("banner");
+  c.className = "conn " + (data.mode==="live" ? "live" : data.mode==="error" ? "err" : "");
+  if (data.mode==="live"){
+    t.textContent = "Hub接続中";
+    b.className = "banner live";
+    b.innerHTML = '<span><b>LREACH Hub の実データです。</b>空き枠は '+(data.slotsAt ? fmtD(data.slotsAt)+" "+fmtT(data.slotsAt) : "-")+' 時点（Hubが5分ごとに計算）。</span><button class="linkbtn" id="slots-reload">空き枠を更新</button>'+
+      '<span>予約を確定すると Hub の interview_bookings に登録されます。</span>'+storeHtml()+settingsHtml();
+  } else if (data.mode==="error"){
+    t.textContent = "接続エラー";
+    b.className = "banner";
+    b.innerHTML = '<span class="pill warn">読み込めませんでした</span><span>'+esc(data.error||"")+'</span><button class="linkbtn" onclick="location.reload()">再読み込み</button>';
+  }
+}
+function storeHtml(){
+  return '<span class="pill ok">全員で共有</span><span>予約・トスアップ・再電話・メモ・仮押さえは全員の画面に反映されます'+(store.syncedAt?'（'+fmtT(store.syncedAt)+' 同期）':'')+'。</span>';
+}
+function settingsHtml(){
+  return '<details class="sec" style="flex:1 1 100%;background:var(--surface)"><summary>SMSで送るLINE友だち追加URL'+(st.lineUrl?'：'+esc(st.lineUrl):'（未設定）')+'</summary><div class="in settings"><label class="f"><span>公式LINEの友だち追加URL（lin.ee など）</span><input type="text" id="line-url" value="'+esc(st.lineUrl)+'" placeholder="https://lin.ee/xxxxxxx"></label><button type="button" class="btn flex0" id="line-url-save">保存</button></div></details>';
+}
+
+/* ---------- 空き枠 ---------- */
+function slotsOfDay(d){ const out=[]; for (let h=OPEN_H; h<CLOSE_H; h++) for (const m of [0,30]){ const t = at(d,h,m); if (data.slots[slotKey(t)]) out.push(t); } return out; }
+function capacity(t){
+  const s = data.slots[slotKey(t)];
+  if (t < addMin(new Date(), LEAD_MIN)) return {n:0, past:true, staff:[]};
+  if (!s) return {n:0, past:false, staff:[]};
+  let n = s.available;
+  const iso = t.toISOString(), now = Date.now();
+  n -= st.drafts.filter(b => b.start===iso && ((b.hubStatus||"draft")==="draft" || (b.hubStatus==="registered" && data.slotsAt && new Date(b.createdAt) > data.slotsAt))).length;
+  n -= st.holds.filter(h => h.start===iso && h.expires > now && h.by !== operator()).length;
+  return {n:Math.max(0,n), past:false, staff:s.staff};
+}
+const BANDS = {am:[9,12,"午前"], pm:[12,17,"午後"], ev:[17,23,"夜"]};
+const bandOf = t => t.getHours()<12 ? "am" : t.getHours()<17 ? "pm" : "ev";
+function proposals(max){
+  const out = [], keys = ui.band==="all"||ui.band==="we" ? ["am","pm","ev"] : [ui.band];
+  for (let d=0; d<DAYS && out.length<max; d++){
+    const day = at(d,0,0); if (ui.band==="we" && day.getDay()!==0 && day.getDay()!==6) continue;
+    for (const k of keys){
+      const t = slotsOfDay(d).find(x => bandOf(x)===k && capacity(x).n>0);
+      if (t){ out.push(t); if (out.length>=max) break; }
+    }
+  }
+  return out;
+}
+function nearestFree(target, count){
+  const all = []; for (let d=0; d<DAYS; d++) slotsOfDay(d).forEach(t => { if (capacity(t).n>0) all.push(t); });
+  return all.sort((a,b) => Math.abs(a-target)-Math.abs(b-target)).slice(0,count).sort((a,b)=>a-b);
+}
+function renderProposals(){
+  document.querySelectorAll("#bands .band").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.band===ui.band)));
+  $("slot-sub").textContent = data.mode==="live" && data.slotsAt ? "Hubの空き枠（"+fmtT(data.slotsAt)+"時点）" : "自社IS枠から「ここどうですか？」";
+  if (data.mode==="connecting"){ $("props").innerHTML = '<p class="loading">空き枠を読み込み中…</p>'; $("script").innerHTML = ""; return; }
+  const ps = proposals(6), u = ui.user;
+  if (!ps.length){
+    $("props").innerHTML = '<div class="empty" style="grid-column:1/-1">この条件の空き枠が今後'+DAYS+'日間にありません。条件を「すべて」に戻すか、再電話で対応してください。</div>';
+    $("script").innerHTML = '<span class="lbl">トーク例</span><div>あいにく直近は埋まっております。改めてお電話してもよろしいでしょうか？</div>';
+    return;
+  }
+  $("props").innerHTML = ps.map(t => { const c = capacity(t), sel = ui.sel===t.getTime();
+    return '<button type="button" class="prop'+(sel?' sel':'')+'" data-t="'+t.getTime()+'"><span class="d">'+dayFull(t)+'</span><span class="tm">'+fmtT(t)+'</span><span class="ft"><span class="pill'+(sel?'':' acc')+'">'+BANDS[bandOf(t)][2]+'</span><span class="pill '+(sel?'':(c.n===1?'warn':'ok'))+'">IS '+c.n+'名</span></span></button>'; }).join("");
+  const who = u ? u.name.split(/[\s　]/)[0]+"様、" : "";
+  const txt = who+"直近ですと、"+ps.slice(0,3).map(t => dayLabel(t)+"の"+fmtT(t)).join("、")+"でお時間をお取りできます。ご都合のよいお時間はございますか？";
+  $("script").innerHTML = '<span class="lbl">トーク例（直近の空き）</span><div>'+esc(txt)+'</div>';
+}
+function renderCal(){
+  document.querySelectorAll("#slotview button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.sv===ui.slotView)));
+  $("pick-view").hidden = ui.slotView!=="pick"; $("cal-view").hidden = ui.slotView!=="cal";
+  $("bands").style.visibility = ui.slotView==="pick" ? "visible" : "hidden";
+  if (ui.slotView!=="cal") return;
+  const days = Array.from({length:DAYS}, (_,d) => d);
+  let html = '<div class="ch"></div>' + days.map(d => { const t = at(d,0,0), we = t.getDay()===0||t.getDay()===6;
+    return '<div class="ch'+(we?' we':'')+'">'+dayLabel(t)+(dayLabel(t)!==fmtD(t)?'<small>'+fmtD(t)+'</small>':'')+'</div>'; }).join("");
+  for (let h=OPEN_H; h<CLOSE_H; h++) for (const m of [0,30]){
+    html += '<div class="ct'+(m?' half':'')+'">'+(m?'':pad(h)+':00')+'</div>';
+    days.forEach(d => {
+      const t = at(d,h,m), has = !!data.slots[slotKey(t)], c = capacity(t), sel = ui.sel===t.getTime();
+      if (!has){ html += '<div class="cc none'+(m?' half':'')+'"></div>'; return; }
+      const cls = sel ? "sel" : c.past ? "past" : c.n===0 ? "full" : c.n===1 ? "few" : "many";
+      const lab = sel ? "選択中" : c.past ? "" : c.n===0 ? "満" : c.n+"名";
+      html += '<button type="button" class="cc '+cls+(m?' half':'')+'" data-t="'+t.getTime()+'" '+((c.past||c.n===0)&&!sel?'disabled':'')+' aria-label="'+fmtD(t)+' '+fmtT(t)+' '+(c.past?"受付終了":c.n===0?"満枠":"空きIS"+c.n+"名")+'"><span class="tt">'+fmtT(t)+'</span><span>'+lab+'</span></button>';
+    });
+  }
+  const el = $("cal"); el.style.gridTemplateColumns = "48px repeat("+DAYS+", minmax(64px,1fr))"; el.innerHTML = html;
+}
+function renderHold(){
+  const el = $("hold");
+  if (!ui.sel){ el.innerHTML = '<p class="hint">枠を押すと5分間の仮押さえになります。</p>'; return; }
+  const t = new Date(ui.sel), left = ui.hold ? Math.max(0, Math.round((ui.hold.expires - Date.now())/1000)) : 0, c = capacity(t);
+  el.innerHTML = '<div class="holdbar"><span>仮押さえ中</span><b>'+dayFull(t)+' '+fmtT(t)+'</b><span style="font-size:12px">空きIS：'+esc((c.staff||[]).join("、")||"-")+'</span><span class="timer" id="timer">残り '+Math.floor(left/60)+':'+pad(left%60)+'</span><button type="button" class="btn sm" id="release">解除</button></div>';
+}
+async function selectSlot(ms){
+  const t = new Date(ms);
+  if (capacity(t).n <= 0){ toast("この枠は埋まりました。ほかの枠を選んでください。"); renderAll(); return; }
+  const prev = ui.hold && ui.hold.id;
+  const h = await acquireHold(t);
+  if (!h.ok){ toast("ほかの担当がこの枠を押さえました。ほかの枠を選んでください。"); try { await loadShared(); } catch(e){} renderAll(); return; }
+  if (prev) releaseHoldRow(prev);
+  ui.sel = ms; ui.hold = {start:ms, expires:Date.now()+HOLD_SEC*1000, id:h.id||null};
+  renderAll();
+}
+function releaseHold(msg){ if (ui.hold && ui.hold.id) releaseHoldRow(ui.hold.id); ui.sel = null; ui.hold = null; if (msg) toast(msg); renderAll(); }
+setInterval(() => {
+  if (!ui.hold) return;
+  if (Date.now() >= ui.hold.expires){ releaseHold("仮押さえの5分が過ぎたため解除しました。もう一度枠を選んでください。"); return; }
+  const el = $("timer"); if (el){ const left = Math.round((ui.hold.expires-Date.now())/1000); el.textContent = "残り "+Math.floor(left/60)+":"+pad(left%60); }
+}, 1000);
+function askCheck(){
+  const v = $("ask-at").value;
+  if (!v){ $("ask-ans").innerHTML = '<p class="hint">日時を入れてください。</p>'; return; }
+  const want = new Date(v); want.setMinutes(want.getMinutes()<30?0:30,0,0);
+  const c = capacity(want), alts = nearestFree(want, 4).filter(t => t.getTime()!==want.getTime());
+  const altHtml = alts.length ? '<div class="outcomes" style="margin-top:6px">'+alts.map(t => '<button type="button" class="btn sm" data-pick="'+t.getTime()+'">'+dayLabel(t)+' '+fmtT(t)+'</button>').join("")+'</div>' : '';
+  if (c.n>0){
+    $("ask-ans").innerHTML = '<div class="verdict ok"><span class="ic">○</span><div><p>'+dayFull(want)+' '+fmtT(want)+' は空いています（IS '+c.n+'名）</p><p>このまま押さえる場合は下のボタンを押してください。</p></div></div><div class="outcomes" style="margin-top:6px"><button type="button" class="btn primary sm" data-pick="'+want.getTime()+'">この時間で仮押さえ</button></div>';
+  } else {
+    const why = c.past ? (want < new Date() ? "過ぎた時間です" : "開始"+LEAD_MIN+"分前を切っているため受付できません") : !data.slots[slotKey(want)] ? "受付時間外です" : "この時間は埋まっています";
+    $("ask-ans").innerHTML = '<div class="verdict crit"><span class="ic">×</span><div><p>'+esc(fmtD(want)+" "+fmtT(want)+"："+why)+'</p><p>近い空き枠を提案してください。</p></div></div>'+altHtml;
+  }
+}
+
+/* ---------- STEP1 検索 ---------- */
+async function search(q){
+  ui.q = q; ui.done = null; ui.sms = null; ui.searchErr = null; ui.user = null; ui.tossups = null; resetVerify();
+  const p = normPhone(q);
+  if (!p){ ui.hits = []; renderAll(); return; }
+  if (p.length < 4){ ui.hits = []; ui.searchErr = "4桁以上入力してください。"; renderAll(); return; }
+  ui.searching = true; renderHits();
+  try { ui.hits = (await api("/api/users?phone="+encodeURIComponent(p))).users.map(mapUser); }
+  catch(e){ ui.hits = []; ui.searchErr = errText(e); }
+  ui.searching = false;
+  if (ui.hits.length===1) pickUser(ui.hits[0]); else renderAll();
+}
+async function pickUser(u){
+  ui.user = u; ui.done = null; ui.sms = null; ui.tossups = null; resetVerify(); prefill(); renderAll();
+  try { ui.tossups = (await api("/api/tossups?userId="+encodeURIComponent(u.id))).tossups; } catch(e){ ui.tossups = {err: errText(e)}; }
+  if (ui.user === u) renderVerify();
+}
+function resetVerify(){ ui.confirmed=false; ui.mismatch=false; ui.mismatchReason=""; ui.spoken=""; ui.birthCheck=""; }
+function upcomingBooking(u){
+  const now = new Date();
+  const hub = (u.bookings||[]).find(b => !b.canceled && new Date(b.start) > now && ![12,13].includes(b.status));
+  if (hub) return {start:new Date(hub.start), staff:hub.staff};
+  const d = st.drafts.find(b => b.userId===u.id && new Date(b.start) > now);
+  return d ? {start:new Date(d.start), staff:d.staff, draft:true} : null;
+}
+function userFlags(u){
+  const f = [], up = upcomingBooking(u);
+  if (up) f.push({lv:"crit", t:"予約済み "+fmtD(up.start)+" "+fmtT(up.start), msg:"すでにプレ面談の予約があります（"+fmtD(up.start)+" "+fmtT(up.start)+(up.staff?"・"+up.staff:"")+"）。日程変更の希望か確認してください。"});
+  if (u.blocked) f.push({lv:"crit", t:"LINEブロック", msg:"公式LINEがブロックされています。確定メッセージが届かないため、SMSでLINEの再追加URLを送ります。"});
+  else if (!u.lineAdded) f.push({lv:"crit", t:"LINE未追加", msg:"公式LINEの友だち追加がまだです。SMSで友だち追加URLを送ってください。"});
+  if (u.phoneDup) f.push({lv:"warn", t:"同一番号あり", msg:"同じ電話番号の登録が複数あります。名前と生年月日で本人を確かめてください。"});
+  const lg = st.logs.filter(l => l.u && l.u.id===u.id).sort((a,b)=>new Date(b.at)-new Date(a.at))[0];
+  const memo = lg && [lg.state && lg.state!=="本人と話せた" ? lg.state : "", lg.pref ? "連絡しやすい時間："+lg.pref : "", lg.memo].filter(Boolean).join("／");
+  if (lg && lg.type!=="再電話") f.push({lv:"warn", t:"過去に"+lg.type, msg:fmtD(new Date(lg.at))+"に「"+lg.type+"」で報告済み（"+lg.by+"）。"+(memo?"メモ："+memo:"")});
+  if (lg && lg.type==="再電話" && !lg.done) f.push({lv:"info", t:"再電話予定", msg:"再電話予定 "+fmtD(new Date(lg.callbackAt))+" "+fmtT(new Date(lg.callbackAt))+"（"+lg.by+"が登録）。"+(memo?"メモ："+memo:"")});
+  return f;
+}
+function renderHits(){
+  const el = $("hits");
+  if (ui.searching){ el.innerHTML = '<p class="loading">Hubを検索しています…</p>'; return; }
+  if (ui.searchErr){ el.innerHTML = '<div class="verdict crit"><span class="ic">!</span><div><p>'+esc(ui.searchErr)+'</p></div></div>'; return; }
+  if (!ui.q){ el.innerHTML = '<p class="hint">LINEで登録したユーザーを、Hubに登録された電話番号で探します。</p>'; return; }
+  if (!ui.hits.length){
+    const p = normPhone(ui.q);
+    el.innerHTML = '<div class="verdict crit"><span class="ic">×</span><div><p>この番号の登録が見つかりません（'+esc(fmtPhone(p))+'）</p><p>番号を復唱して聞き間違いがないか確かめてください。LINE未登録の方には、SMSで公式LINEの友だち追加URLを送ります。</p></div></div>'+
+      (p.length>=10 ? smsBox({kind:"add", phone:p}) : '');
+    return;
+  }
+  el.innerHTML = (ui.hits.length>1 ? '<p class="hint">'+ui.hits.length+'件ヒットしました。名前を聞いて該当する人を選んでください。</p>' : '') +
+    ui.hits.map((u,i) => {
+      const tags = userFlags(u).map(f => '<span class="pill '+(f.lv==="info"?"acc":f.lv)+'">'+esc(f.t)+'</span>').join("");
+      return '<button type="button" class="hit" data-hit="'+i+'" aria-pressed="'+(ui.user===u)+'">'+
+        '<span class="nm">'+esc(u.name)+'</span>'+
+        '<span class="tags">'+(tags || '<span class="pill ok">予約可</span>')+'</span>'+
+        '<span class="meta"><span class="mono">'+esc(fmtPhone(u.phone))+'</span>'+(u.line?'<span>LINE名：'+esc(u.line)+'</span>':'')+(u.inflowAt?'<span>登録：'+fmtD(new Date(u.inflowAt))+'</span>':'')+(u.home?'<span>'+esc(u.home)+'</span>':'')+'</span></button>';
+    }).join("");
+}
+
+/* ---------- STEP2 本人確認 ---------- */
+function autoMatch(u){
+  if (!ui.spoken) return null;
+  const s = normName(ui.spoken);
+  return [u.name, u.line].filter(Boolean).some(n => normName(n)===s) ? "ok" : "ng";
+}
+function verified(){
+  const u = ui.user; if (!u) return false;
+  if (ui.mismatch) return !!ui.mismatchReason.trim();
+  if (u.phoneDup && ui.birthCheck && ui.birthCheck !== u.birth) return false;
+  return ui.confirmed || autoMatch(u)==="ok";
+}
+function renderVerify(){
+  const u = ui.user, panel = $("p-verify");
+  panel.classList.toggle("locked", !u);
+  if (!u){ $("verify").innerHTML = '<p class="hint">STEP 1でユーザーを選ぶと、ここで本人確認ができます。</p>'; return; }
+  const flags = userFlags(u), am = autoMatch(u), sur = u.name.split(/[\s　]/)[0];
+  let v;
+  if (ui.mismatch) v = ui.mismatchReason.trim() ? {lv:"warn", ic:"△", h:"名前が違うが確認して進める", s:"理由："+ui.mismatchReason.trim()} : {lv:"crit", ic:"×", h:"名前が違う", s:"番号違い・家族の番号の可能性があります。確認できた内容を書けば進めます。"};
+  else if (ui.confirmed || am==="ok") v = {lv:"ok", ic:"○", h:"本人と確認できました", s: am==="ok" ? "入力した名前が登録名と一致" : "登録名を読み上げて本人と確認"};
+  else if (am==="ng") v = {lv:"warn", ic:"△", h:"入力した名前が登録名・LINE名と一致しません", s:"漢字の違いだけなら、登録名を読み上げて確認してください。"};
+  else v = {lv:"none", ic:"…", h:"「"+sur+"様でお間違いないでしょうか？」と確認してください", s:"確認できたら下のボタンを押します。"};
+  if (u.phoneDup && ui.birthCheck) v.s += ui.birthCheck===u.birth ? "／生年月日も一致" : "／生年月日が一致しません";
+  const t = ui.tossups;
+  const tossHtml = data.mode!=="live" ? "" : t===null ? '<p class="loading">Slackトスアップの履歴を確認中…</p>' : t.err ? '<p class="hint">トスアップ履歴を読めませんでした：'+esc(t.err)+'</p>' : !t.length ? '<p class="hint">過去のトスアップ（Slack）はありません。</p>' :
+    '<details class="sec"><summary>過去のトスアップ（Slack）'+t.length+'件</summary><div class="in">'+t.map(x => '<div class="tossup"><div class="hd"><span>'+esc(x.posted_at ? fmtD(new Date(x.posted_at)) : "")+'</span>'+(x.is_name?'<span class="pill">IS '+esc(x.is_name)+'</span>':'')+(x.overall_grade?'<span class="pill acc">総合 '+esc(x.overall_grade)+'</span>':'')+(x.age?'<span>'+esc(x.age)+'歳</span>':'')+(x.desired_area?'<span>希望 '+esc(x.desired_area)+'</span>':'')+'</div>'+(x.intro?'<p>'+esc(x.intro)+'</p>':'')+(x.permalink?'<a href="'+esc(x.permalink)+'" target="_blank" rel="noopener">Slackで開く</a>':'')+'</div>').join("")+'</div></details>';
+  $("verify").innerHTML =
+    '<div class="idcard"><span class="sm">登録名</span><span class="big">'+esc(u.name)+'</span><span class="sm">'+[u.line?"LINE名："+u.line:"", u.birth?"生年月日："+u.birth.replace(/-/g,"/"):"", u.home].filter(Boolean).map(esc).join("　")+'</span></div>'+
+    '<div class="btnrow"><button type="button" class="btn primary" id="v-ok"'+(ui.confirmed?' aria-pressed="true"':'')+'>本人と確認できた</button><button type="button" class="btn danger" id="v-ng">名前が違う</button></div>'+
+    (ui.mismatch ? '<label class="f"><span>確認した内容（例：旧姓で登録していた）</span><input type="text" id="mismatch-reason" value="'+esc(ui.mismatchReason)+'"></label>' : '')+
+    '<div class="row"><label class="f"><span>聞いた名前（任意・入力すると自動で照合）</span><input type="text" id="spoken" value="'+esc(ui.spoken)+'"></label>'+
+    (u.phoneDup ? '<label class="f"><span>生年月日（同一番号ありのため確認）</span><input type="date" id="birthcheck" value="'+esc(ui.birthCheck)+'"></label>' : '')+'</div>'+
+    '<div class="verdict '+v.lv+'" id="verdict" aria-live="polite"><span class="ic">'+v.ic+'</span><div><p>'+esc(v.h)+'</p><p>'+esc(v.s)+'</p></div></div>'+
+    (flags.length ? '<div class="alerts">'+flags.map(f => '<div class="alert '+f.lv+'">'+esc(f.msg)+'</div>').join("")+'</div>' : '')+
+    ((u.blocked || !u.lineAdded) ? smsBox({kind: u.blocked ? "readd" : "add", phone:u.phone, name:u.name}) : '')+
+    tossHtml;
+}
+
+/* ---------- SMS（LINE友だち追加URL） ---------- */
+function smsText(o){
+  const url = st.lineUrl || "（友だち追加URLが未設定です）";
+  const sur = o.name ? o.name.split(/[\s　]/)[0]+"様\n" : "";
+  if (o.kind==="booked") return "【出会えるエージェント】\n"+sur+"ご面談のご予約ありがとうございます。\n日時："+o.when+"\n方法："+o.how+"\nご案内は公式LINEでお送りします。下記からLINEの追加をお願いいたします。\n"+url;
+  if (o.kind==="readd") return "【出会えるエージェント】\n"+sur+"先ほどはお電話ありがとうございました。\nご面談のご案内は公式LINEでお送りしています。お手数ですが、下記からLINEの再追加をお願いいたします。\n"+url;
+  return "【出会えるエージェント】\n先ほどはお電話ありがとうございました。\nエージェントのご紹介・日程のご案内は公式LINEでお送りしています。下記から友だち追加をお願いいたします。\n"+url;
+}
+function smsBox(o){
+  ui.sms = o;
+  const txt = smsText(o), n = [...txt].length, seg = n<=70 ? 1 : Math.ceil(n/67);
+  return '<div class="sms"><h3>SMSでLINE'+(o.kind==="readd"?"の再追加":"友だち追加")+'URLを送る</h3>'+
+    '<div class="meta"><span>宛先 <b class="mono">'+esc(fmtPhone(o.phone))+'</b></span><span>'+n+'文字（'+seg+'通分）</span></div>'+
+    '<textarea id="sms-text" aria-label="SMS本文">'+esc(txt)+'</textarea>'+
+    (st.lineUrl ? '' : '<p class="hint" style="color:var(--warn)">上の「SMSで送るLINE友だち追加URL」にURLを設定してください。</p>')+
+    '<div class="btnrow"><button type="button" class="btn" id="sms-copy">本文をコピー</button><button type="button" class="btn primary" id="sms-send"'+(st.lineUrl?'':' disabled')+'>SMSを送る</button></div>'+
+    '<p class="hint">試作のため「SMSを送る」は実際には送信しません。Hubの送信の仕組みと接続後に送れるようにします。</p></div>';
+}
+
+/* ---------- STEP4 送客FMT ---------- */
+const F = id => $("f-"+id);
+const FMT_KEYS = ["name","kana","sex","birth","phone","mail","home","area","child","med","timing","edu","emp","type","cos","years","job","want","ng","inc","winc","comment","agents","other"];
+const TOSS_REQ = [["name","名前"],["kana","ふりがな"],["birth","生年月日"],["home","お住まい"],["area","希望勤務地"],["timing","転職希望時期"]];
+function setField(k, v){
+  const el = F(k); if (!el || v===undefined || v===null) return;
+  v = String(v).trim();
+  if (el.tagName==="SELECT" && v && ![...el.options].some(o => o.value===v)){ const o = document.createElement("option"); o.value = o.textContent = v; el.appendChild(o); }
+  el.value = v;
+}
+const getFmt = () => { const o = {}; FMT_KEYS.forEach(k => o[k] = F(k).value); o.method = ui.method; return o; };
+function putFmt(o){ FMT_KEYS.forEach(k => setField(k, o[k] ?? "")); if (o.method) ui.method = o.method; }
+function parseBirth(v){
+  const m = String(v).normalize("NFKC").match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+  return m ? m[1]+"-"+pad(+m[2])+"-"+pad(+m[3]) : "";
+}
+/* 「【送客FMT】」形式のテキストを項目に振り分ける */
+function parseFmt(text){
+  const out = {}, lines = String(text).replace(/\r/g,"").split("\n");
+  const MAP = [[/^名前/,"name"],[/^ふりがな|^フリガナ/,"kana"],[/^性別/,"sex"],[/^生年月日/,"birth"],[/^電話番号/,"phone"],[/^(アドレス|メールアドレス)/,"mail"],
+    [/^お住まい/,"home"],[/^希望勤務地/,"area"],[/^最終学歴/,"edu"],[/^就業中/,"emp"],[/^直近の雇用形態/,"type"],[/^経験社数/,"cos"],[/^正社員の年数/,"years"],
+    [/^現在の職種/,"job"],[/^希望職種/,"want"],[/^NG職種/,"ng"],[/^現年収/,"inc"],[/^希望年収/,"winc"],[/^転職希望時期/,"timing"],[/^お子様/,"child"],[/^既往歴/,"med"],
+    [/^エージェント面談候補日程/,"_when"],[/^面談方法/,"_method"]];
+  const SEC = {"紹介コメント":"comment","使用中エージェント":"agents","その他":"other"};
+  let sec = null;
+  for (const raw of lines){
+    const line = raw.trim();
+    const h = line.match(/^【(.+?)】\s*(.*)$/);
+    if (h){ sec = SEC[h[1]] || null; if (sec && h[2]) out[sec] = h[2]; continue; }
+    if (sec){ out[sec] = (out[sec] ? out[sec]+"\n" : "") + raw.trimEnd(); continue; }
+    const kv = line.match(/^([^：:]+?)\s*[：:]\s*(.*)$/);
+    if (!kv) continue;
+    const key = kv[1].replace(/[\s　]/g,""), val = kv[2].trim();
+    const hit = MAP.find(([re]) => re.test(key));
+    if (hit && val) out[hit[1]] = val;
+  }
+  ["comment","agents","other"].forEach(k => { if (out[k]) out[k] = out[k].replace(/^\n+|\n+$/g,""); });
+  if (out.birth) out.birth = parseBirth(out.birth) || "";
+  if (out.sex) out.sex = /女/.test(out.sex) ? "女性" : /男/.test(out.sex) ? "男性" : out.sex;
+  if (out.child) out.child = /^(なし|無し|いない|いません|無)/.test(out.child) ? "なし" : out.child;
+  if (out.med) out.med = /^(なし|無し|ない|ありません|無)/.test(out.med) ? "なし" : out.med;
+  if (out.emp) out.emp = /離職/.test(out.emp) ? "離職中" : /就業/.test(out.emp) ? "就業中" : out.emp;
+  if (out.type){ const t = out.type; out.type = /正社員ではない/.test(t) ? t : /正社員/.test(t) ? "正社員" : /契約/.test(t) ? "契約社員" : /派遣/.test(t) ? "派遣社員" : /アルバイト|パート/.test(t) ? "アルバイト・パート" : t; }
+  if (out._method) out._method = /オンライン/.test(out._method) ? "オンライン" : /電話/.test(out._method) ? "電話" : "";
+  if (out.phone) out.phone = normPhone(out.phone);
+  return out;
+}
+function applyPaste(){
+  const o = parseFmt($("paste").value), keys = Object.keys(o).filter(k => !k.startsWith("_") && k!=="phone" && o[k]);
+  if (!keys.length){ $("paste-msg").textContent = "項目を読み取れませんでした。「名前　　　：〇〇」のような形式か確認してください。"; return; }
+  keys.forEach(k => setField(k, o[k]));
+  if (o._method && !ui.tossFor) ui.method = o._method;
+  ["sec-career","sec-comment"].forEach(id => $(id).open = true);
+  const notes = [keys.length+"項目を読み込みました。"];
+  const curPhone = ui.tossFor ? (draftById(ui.tossFor)||{u:{}}).u.phone : ui.user && ui.user.phone;
+  if (o.phone && curPhone && o.phone !== curPhone) notes.push("電話番号が選択中のユーザーと違います（貼り付け："+fmtPhone(o.phone)+"）。別の人の内容でないか確認してください。");
+  if (ui.tossFor && o._method && o._method !== (draftById(ui.tossFor)||{}).method) notes.push("面談方法は予約時の「"+FORMS[draftById(ui.tossFor).method].label+"」のままにしています。");
+  if (o._when) notes.push("候補日程「"+o._when+"」はSTEP3で枠を押さえてください。");
+  $("paste-msg").textContent = notes.join(" ");
+  renderFmt();
+}
+const draftById = id => st.drafts.find(b => b.id===id);
+function prefill(){
+  const u = ui.user; if (!u) return;
+  F("name").value = u.name || ""; F("kana").value = ""; F("sex").value = u.sex || ""; F("birth").value = u.birth || "";
+  F("phone").value = u.phone || ""; F("home").value = u.home || ""; F("area").value = u.area || ""; F("timing").value = u.timing || "";
+  ["edu","emp","type","cos","years","job","want","ng","inc","winc","comment","agents","other"].forEach(k => F(k).value = "");
+  F("mail").value = "公式LINE送付済み"; F("child").value = "なし"; F("med").value = "なし";
+}
+function fmtMissing(){ return TOSS_REQ.filter(([k]) => !F(k).value.trim()).map(([,l]) => l); }
+function renderFmt(){
+  const u = ui.user, tf = ui.tossFor ? draftById(ui.tossFor) : null;
+  $("p-fmt").classList.toggle("locked", !u && !ui.done && !tf);
+  $("fmt").hidden = !!ui.done && !tf;
+  $("toss-cancel").hidden = !tf;
+  $("toss-hint").hidden = !!tf;
+  $("toss-head").innerHTML = tf ? '<div class="verdict acc"><span class="ic">✎</span><div><p>'+esc(tf.u.name)+'さんのトスアップ</p><p>予約 '+dayFull(new Date(tf.start))+' '+fmtT(new Date(tf.start))+'・'+esc(FORMS[tf.method].label)+'・予約した人 '+esc(tf.by)+'</p></div></div>' : '';
+  const al = [];
+  if (F("med").value && F("med").value!=="なし") al.push('<div class="alert warn">既往歴ありはプレ面談の対象外になる場合があります。予約せず「既往歴」で報告する運用の場合は、下の「予約に至らなかった場合」から報告してください。</div>');
+  if (!tf && u && (u.blocked || !u.lineAdded)) al.push('<div class="alert crit">LINEで確定メッセージが届かないため、予約後にSMSで日時とLINE追加URLを送ります。</div>');
+  $("fmt-alerts").innerHTML = al.join("");
+  let gate = "", missing = fmtMissing();
+  if (tf){
+    gate = missing.length ? "トスアップに必要な項目：" + missing.join("・") : "";
+    $("book").textContent = "トスアップする";
+    $("fmt-gate").textContent = gate || "Slack用の送客FMTを作り、トスアップ済みにします。";
+  } else {
+    if (!u) gate = "STEP 1でユーザーを選んでください。";
+    else if (!verified()) gate = "STEP 2の本人確認が完了していません。";
+    else if (!ui.sel) gate = "STEP 3で枠を仮押さえしてください。";
+    else if (!F("name").value.trim()) gate = "名前を入れてください。";
+    const confirming = data.mode==="live" && u && ui.sel && ui.confirmKey === ui.sel+"|"+u.id;
+    $("book").textContent = confirming ? "Hubに登録する（もう一度押して確定）" : missing.length ? "予約だけ確定する（トスアップは後で）" : "予約を確定してトスアップする";
+    $("fmt-gate").textContent = gate || (confirming ? "Hubの interview_bookings に「"+hubTitle({method:ui.method}, {name:F("name").value.trim()})+"」として登録します。ユーザーにはLINE予約と同じ確定メッセージが届き、ISはHubが自動で割り当てます。" : missing.length ? "トスアップ項目が未入力でも予約できます。未入力："+missing.join("・")+"。あとで「トスアップ待ち」から入れてください。" : "予約すると、LINE予約と同じ確定メッセージがユーザーに届き、Hubに登録されます。");
+  }
+  $("book").disabled = !!gate;
+  document.querySelectorAll("#method button").forEach(b => { b.setAttribute("aria-pressed", String(b.dataset.v===(tf ? tf.method : ui.method))); b.disabled = !!tf; });
+}
+function pickStaff(t){
+  const names = capacity(t).staff || [];
+  const cand = data.staff.filter(s => names.includes(s.name)).sort((a,b) => a.priority-b.priority);
+  return cand[0] || (names[0] ? {id:null, name:names[0]} : null);
+}
+function hubTitle(b, u){ return "【"+(b.method==="電話" ? "電話面談" : "オンライン面談")+"】"+u.name+"様　出会えるエージェント"; }
+/* 登録後、Hub側の自動処理（IS割当・カレンダー・面談URL・確定メッセージ）が終わったかを追いかける */
+async function watchHub(b){
+  if (!isUuid(b.hubBookingId)) return;
+  const started = Date.now();
+  b.hubWatch = {state:"watching"};
+  while (Date.now() - started < 90000){
+    try { const r = (await api("/api/bookings/status?hubId="+encodeURIComponent(b.hubBookingId))).status; if (r){ b.hubWatch = Object.assign({state:"watching"}, r); if (r.staff) b.staff = r.staff; } } catch(e){}
+    if (ui.done && ui.done.booking===b) renderDone();
+    const w = b.hubWatch; if (w.assigned && w.sent && w.gcal && (b.method==="電話" || w.url)) break;
+    await new Promise(res => setTimeout(res, 6000));
+  }
+  b.hubWatch.state = "done";
+  if (ui.done && ui.done.booking===b) renderDone();
+}
+async function book(e){
+  e.preventDefault();
+  if (ui.tossFor){ saveToss(); return; }
+  if (book.busy) return;
+  const u = ui.user; if (!u || !verified() || !ui.sel || !F("name").value.trim()) return;
+  const t = new Date(ui.sel);
+  if (capacity(t).n <= 0){ toast("この枠は直前に埋まりました。ほかの枠を選んでください。"); releaseHold(); return; }
+  if (ui.confirmKey !== ui.sel+"|"+u.id){ ui.confirmKey = ui.sel+"|"+u.id; renderFmt(); return; }
+  book.busy = true; $("book").disabled = true; $("book").textContent = "Hubに登録しています…";
+  let r;
+  try { r = await api("/api/bookings", {method:"POST", body:{hubUserId:u.id, start:t.toISOString(), method:ui.method, fmt:getFmt(), verifyNote: ui.mismatch ? ui.mismatchReason.trim() : ""}}); }
+  catch(err){
+    book.busy = false; ui.confirmKey = null;
+    toast(errText(err));
+    if (err.status===409){ try { await reloadSlots(); } catch(_){} releaseHold(); } else renderFmt();
+    return;
+  }
+  const b = {id:r.id, userId:u.id, start:t.toISOString(), method:ui.method, staff:"", staffId:null, by:operator(), createdAt:r.createdAt, verifyNote: ui.mismatch ? ui.mismatchReason.trim() : "",
+    notice:r.notice, u:{id:u.id, name:u.name, phone:u.phone}, lineUid:u.lineUid||"", hubStatus:r.hubStatus, hubBookingId:r.hubBookingId, hubError:r.hubError,
+    fmt:getFmt(), tossed:r.tossed, tossedAt: r.tossed ? new Date().toISOString() : null};
+  st.logs.forEach(l => { if (l.u && l.u.id===u.id && l.type==="再電話") l.done = true; });
+  st.drafts.push(b);
+  book.busy = false; ui.confirmKey = null;
+  ui.done = {booking:b, user:u, slack:slackFmt(b,u.phone), sql:r.sql};
+  ui.hold = null; ui.sel = null;
+  renderAll();
+  if (r.hubBookingId) watchHub(b);
+  toast(r.hubBookingId ? "Hubにプレ面談を登録しました" + (b.tossed ? "。トスアップ文面もできています" : "。トスアップはあとからでも入れられます") : "Hubに登録できなかったため、予約内容を保存しました（"+(r.hubError||"")+"）");
+}
+function slackFmt(b, phone){
+  const t = new Date(b.start), f = b.fmt || getFmt(), v = k => String(f[k]||"").trim();
+  return ["こちら取得済みです！","","【送客FMT】",
+    "エージェント面談候補日程："+(t.getMonth()+1)+"月"+t.getDate()+"日 "+fmtT(t)+"〜","面談方法："+b.method,"",
+    "名前　　　："+v("name"),"ふりがな　："+v("kana"),"性別　　　："+v("sex"),"生年月日　："+v("birth").replace(/-/g,"/"),
+    "電話番号　："+phone,"アドレス　："+v("mail"),"お住まい　："+v("home"),"希望勤務地(都道府県)："+v("area"),
+    "最終学歴　："+v("edu"),"就業中/離職中："+v("emp"),"直近の雇用形態："+v("type"),"経験社数（正社員として）："+v("cos"),
+    "正社員の年数："+v("years"),"現在の職種："+v("job"),"希望職種　："+v("want"),"NG職種　："+v("ng"),
+    "現年収　　："+v("inc"),"希望年収（最低金額）　："+v("winc"),"転職希望時期（良い求人があった場合の最短転職可能時期）："+v("timing"),
+    "お子様確認："+v("child"),"既往歴確認："+v("med"),"","【紹介コメント】",v("comment"),"","【使用中エージェント】",v("agents"),"","【その他】",v("other")].join("\n");
+}
+function openToss(id){
+  const d = draftById(id); if (!d) return;
+  ui.tossFor = id; ui.done = null; setView("call");
+  putFmt(d.fmt || {name:d.u.name, phone:d.u.phone}); setField("phone", d.u.phone); $("paste").value = ""; $("paste-msg").textContent = "各項目を下の入力欄に振り分けます。空の項目は上書きしません。";
+  renderAll(); $("p-fmt").scrollIntoView({block:"start"});
+}
+function closeToss(){ ui.tossFor = null; if (ui.user) prefill(); else FMT_KEYS.forEach(k => setField(k, "")); renderAll(); }
+async function saveToss(){
+  const d = draftById(ui.tossFor); if (!d || fmtMissing().length) return;
+  const fmt = Object.assign(getFmt(), {method:d.method});
+  $("book").disabled = true; $("book").textContent = "保存しています…";
+  try { d.fmt = fmt; await persistToss(d); }
+  catch(e){ toast(errText(e)); renderFmt(); return; }
+  d.tossed = true; d.tossedAt = new Date().toISOString(); d.tossedBy = operator();
+  ui.tossFor = null;
+  ui.done = {booking:d, user:Object.assign({lineUid:"", bookings:[]}, d.u), slack:slackFmt(d, d.u.phone), sql:"", tossOnly:true};
+  renderAll(); $("p-fmt").scrollIntoView({block:"start"});
+  toast("トスアップしました。Slack用の文面をコピーして投稿してください");
+}
+
+/* LINE予約と同じ確定メッセージ（Hub reminder_type 8/9 の on_booking を再現） */
+function flexHtml(b, u){
+  const t = new Date(b.start), f = FORMS[b.method], nm = esc(u.name);
+  const note = b.method==="電話" ? '<span class="note">※ご予約日時になりましたら\n 『担当コンサルタント』より\n お電話差し上げます！</span>'
+    : '<span class="k">オンライン面談リンク👇</span><span class="note">（予約時にHubが発行する面談リンクが入ります）</span>';
+  return '<div class="flexmsg"><div class="fx-hero">出会えるエージェント 予約内容</div>'+
+    '<div class="fx-head">'+nm+'さん<br>【出会えるエージェントのご案内】の<br>ご予約ありがとうございます✨<br><u>日程が近づいてまいりましたら</u><br><u>改めてご連絡いたします！🙇‍♀️</u></div>'+
+    '<div class="fx-box"><span class="k">【予約内容】</span><span class="v">出会えるエージェントのご案内</span><span class="k">【案内方法】</span><span class="v">'+f.label+'</span><span class="k">【予約日時】</span><span class="v">'+jpDate(t)+fmtT(t)+'</span>'+note+'</div>'+
+    '<div class="fx-foot">当日は'+nm+'さんの<br>✅今のお悩みや不安<br>✅転職希望条件<br>✅理想の将来設計<br>など丁寧にお伺いさせていただき<br><span class="em">'+nm+'さんの<br>転職希望に沿ったエージェントを<br>最大3社ご案内させていただきます✨</span></div></div>';
+}
+const FOLLOW_TEXT = "ご予約完了いたしました！\n\n当日お話しできるのを、\n楽しみにしております！✨\n\nまた下記ご案内もご確認ください！\n\n①サービス説明動画（1分）\nhttps://www.youtube.com/watch?v=ZZTPHkeC-ik\n\n②事前ヒアリングシート\n回答内容をご面談担当が確認し、\nより希望に合うエージェント選定のため\n参照させていただきます！🙌🏻";
+const SHEET_TEXT = "※このメッセージをコピーしてご記載ください！\n名前　　　：\nふりがな　：\n性別　　　：\n生年月日　：\n電話番号　：\nメールアドレス　：\nお住まい(市区町村まででOK！)　：\n希望勤務地：\n最終学歴（学校名）：\n就業中/離職中：\n直近の雇用形態：\n転職回数：\n現在の職種：\n希望職種：\nNG職種：\n現年収：\n希望年収（最低金額〜）　：\n転職希望時期：\n現在お勤めの企業名（任意）：\n面談で聞きたいこと（任意）：";
+function reminderPlan(t){
+  const d = n => { const x = startOfDay(t); x.setDate(x.getDate()-n); return x; };
+  const hm = (x,h,m) => { const y = new Date(x); y.setHours(h,m,0,0); return y; };
+  return [["前日 12:03", hm(d(1),12,3)], ["当日 8:03", hm(d(0),8,3)], ["1時間前", addMin(t,-60)], ["30分前", addMin(t,-30)], ["10分前", addMin(t,-10)]].filter(([,x]) => x > new Date());
+}
+function renderDone(){
+  let el = $("done-box");
+  if (!ui.done){ if (el) el.remove(); return; }
+  if (!el){ el = document.createElement("div"); el.id = "done-box"; $("fmt-body").prepend(el); }
+  const b = ui.done.booking, u = ui.done.user, t = new Date(b.start), f = FORMS[b.method];
+  const viaLine = b.notice==="LINE";
+  if (ui.done.tossOnly){
+    el.innerHTML = '<div class="done"><h3>トスアップしました</h3><dl class="kv"><dt>ユーザー</dt><dd>'+esc(u.name)+'</dd><dt>予約</dt><dd class="mono">'+dayFull(t)+' '+fmtT(t)+'・'+esc(f.label)+'</dd></dl>'+
+      '<pre class="out" id="done-text">'+esc(ui.done.slack)+'</pre><div class="row"><span class="hint" style="flex:1 1 200px">#調整-foresma-スイッチ に貼り付けてください。</span><button type="button" class="btn flex0" id="copy-done">文面をコピー</button><button type="button" class="btn primary flex0" id="next-call">閉じる</button></div></div>';
+    return;
+  }
+  const reg = b.hubStatus==="registered", w = b.hubWatch || {};
+  const chk = (ok, label, wait) => '<li><span class="pill '+(ok ? "ok" : w.state==="done" ? "warn" : "")+'">'+(ok ? "済" : w.state==="done" ? "未" : "待機中")+'</span> '+label+(ok || w.state!=="done" ? "" : '<span class="hint">　'+wait+'</span>')+'</li>';
+  const steps = reg ? '<ul class="hubsteps">'+
+      '<li><span class="pill ok">済</span> interview_bookings に登録（予約ID <span class="mono">'+esc(String(b.hubBookingId).slice(0,8))+'…</span>）</li>'+
+      chk(w.assigned, "IS担当の自動割当"+(w.staff ? "：<b>"+esc(w.staff)+"</b>" : ""), "Hubの割当待ち。Slackの割り振りスレッドを確認してください")+
+      chk(w.gcal, "ISのGoogleカレンダーに登録", "IS割当のあとに作られます")+
+      (b.method==="オンライン" ? chk(w.url, "オンライン面談URLの発行", "Hub側で発行されていません") : "")+
+      chk(w.sent || b.notice!=="LINE", b.notice==="LINE" ? "LINEで確定メッセージを送信" : "LINEに届かないためSMSで案内（下）", "Hubから送られていません。Hubの画面から送信してください")+
+    '</ul>' : '<div class="alert warn">Hubには登録されていません：'+esc(b.hubError||"")+'。「トスアップ待ち」の一覧に「Hub未登録」として残ります。</div>';
+  el.innerHTML = '<div class="done"><h3>'+(reg ? "Hubにプレ面談を登録しました" : "予約内容を保存しました（Hub未登録）")+'</h3>'+
+    '<dl class="kv"><dt>ユーザー</dt><dd>'+esc(u.name)+'</dd><dt>日時</dt><dd class="mono">'+dayFull(t)+' '+fmtT(t)+'〜'+fmtT(addMin(t,MEET_MIN))+'</dd><dt>方法</dt><dd>'+esc(f.label)+'</dd><dt>担当IS</dt><dd>'+esc(b.staff||"Hubが自動で割り当て")+'</dd></dl>'+
+    '<div class="card"><div class="cap">Hubでの処理状況'+(reg && w.state!=="done" ? ' <span class="hint">（数秒ごとに確認中）</span>' : '')+'</div>'+steps+'</div>'+
+    '<div class="two">'+
+      '<div class="card"><div class="cap">'+(reg ? 'ユーザーに届くメッセージ（Hubから送信）' : 'Hubに登録すると届くメッセージ')+' '+(viaLine ? '<span class="pill ok">公式LINE（LINE予約と同じ）</span>' : '<span class="pill warn">LINEに届かないためSMS</span>')+'</div>'+
+        (viaLine ? '<div class="chat">'+flexHtml(b,u)+'<div class="bubble">'+esc(FOLLOW_TEXT)+'</div><details class="sec" style="background:var(--surface);width:100%"><summary>3通目：事前ヒアリングシート</summary><div class="in"><div class="bubble" style="background:var(--sunk)">'+esc(SHEET_TEXT)+'</div></div></details></div>'
+          : smsBox({kind:"booked", phone:u.phone, name:u.name, when:jpDate(t)+fmtT(t), how:f.label}))+
+      '</div>'+
+      '<div class="card"><div class="cap">'+(reg ? 'interview_bookings に入れた内容' : 'interview_bookings に入れる内容')+'</div>'+
+        '<dl class="kv"><dt>件名</dt><dd>'+esc(hubTitle(b,u))+'</dd><dt>日時</dt><dd class="mono">'+fmtD(t)+' '+fmtT(t)+'〜'+fmtT(addMin(t,MEET_MIN))+'</dd><dt>予約フォーム</dt><dd>'+esc(f.name)+'</dd><dt>リマインド種別</dt><dd>'+f.reminder+'（LINE予約と同じ）</dd><dt>IS担当</dt><dd>空欄で登録 → Hubが自動割当</dd><dt>アポ取得者</dt><dd>スイッチ（メモに '+esc(b.by)+'）</dd><dt>タグ</dt><dd class="mono">'+HUB_TAG+'</dd>'+(b.verifyNote?'<dt>本人確認メモ</dt><dd>'+esc(b.verifyNote)+'</dd>':'')+'</dl>'+
+        '<div><div class="hint" style="margin-bottom:4px">このあと自動で届くリマインド（Hubの既存設定）</div><div class="rem">'+(reminderPlan(t).map(([l]) => '<span class="pill">'+l+'</span>').join("") || '<span class="hint">直前の予約のため、リマインドはありません</span>')+'</div></div>'+
+        '<details class="sec"><summary>'+(reg ? '実行したSQL' : '実行するSQL')+'</summary><div class="in"><code class="sql">'+esc(ui.done.sql)+'</code></div></details>'+
+      '</div>'+
+    '</div>'+
+    (b.tossed ? '<details class="sec" open><summary>トスアップ（Slack用の送客FMT）</summary><div class="in"><pre class="out" id="done-text">'+esc(ui.done.slack)+'</pre><div class="row"><button type="button" class="btn flex0" id="copy-done">文面をコピー</button></div></div></details>'
+      : '<div class="alert warn" style="align-items:center;flex-wrap:wrap">トスアップは未入力です。「トスアップ待ち」に入りました。<button type="button" class="btn sm" data-toss="'+esc(b.id)+'">いまトスアップする</button></div>')+
+    '<div class="row"><span style="flex:1"></span><button type="button" class="btn primary flex0" id="next-call">次の架電へ</button></div></div>';
+}
+
+/* ---------- 予約に至らなかった場合 ---------- */
+const CALL_STATES = ["本人と話せた","留守電に残した","出なかった","途中で切れた","本人以外が出た","番号が使われていない"];
+function renderOutcome(){
+  const el = $("outcome-form"), u = ui.user;
+  document.querySelectorAll("#outcomes button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.o===ui.outcome)));
+  if (!ui.outcome){ el.innerHTML = '<p class="hint">結果を選ぶと、メモを書いてSlackに報告する文面ができます。再電話は再電話リストに登録されます。</p>'; return; }
+  if (!u){ el.innerHTML = '<p class="hint">先にSTEP 1でユーザーを選んでください。</p>'; return; }
+  const def = toLocalInput(addMin(new Date(), 120 - (new Date().getMinutes()%30)));
+  const defState = ui.outcome==="不通" ? "出なかった" : "本人と話せた";
+  el.innerHTML = '<div class="grid2">'+
+    (ui.outcome==="再電話" ? '<label class="f"><span>再電話の日時<b>*</b></span><input type="datetime-local" id="cb-at" step="1800" value="'+def+'"></label>' : '')+
+    '<label class="f"><span>通話の状況</span><select id="o-state">'+CALL_STATES.map(x => '<option'+(x===defState?' selected':'')+'>'+x+'</option>').join("")+'</select></label>'+
+    '<label class="f"><span>次に連絡しやすい時間帯</span><input type="text" id="o-pref" placeholder="平日19時以降、土日午前 など"></label></div>'+
+    '<label class="f"><span>メモ（詳しく）</span><textarea id="o-memo" placeholder="例：転職は来年春を検討。今は繁忙期で面談の時間が取れないとのこと。11月中旬に再度連絡OK。電話は昼休み12:15〜12:45がつながりやすい。"></textarea></label>'+
+    '<label style="display:flex;gap:8px;align-items:center;font-size:12px"><input type="checkbox" id="o-memo-slack" checked> Slackの報告にメモも入れる</label>'+
+    '<pre class="out" id="o-text"></pre><div class="row"><button type="button" class="btn flex0" id="o-copy">文面をコピー</button><button type="button" class="btn primary flex0" id="o-save">記録する</button></div>';
+  updateOutcomeText();
+}
+function outcomeVals(){
+  return { at: ($("cb-at")||{}).value || "", state: ($("o-state")||{}).value || "", pref: (($("o-pref")||{}).value||"").trim(), memo: (($("o-memo")||{}).value||"").trim(), toSlack: !!($("o-memo-slack")||{}).checked };
+}
+function outcomeText(){
+  const u = ui.user; if (!u) return "";
+  const v = outcomeVals();
+  const lines = ["・名前："+u.name, ui.outcome==="再電話" ? "・再電話："+(v.at ? fmtSlack(new Date(v.at)) : "") : "・"+ui.outcome];
+  if (v.toSlack){
+    if (v.state && v.state!=="本人と話せた") lines.push("・状況："+v.state);
+    if (v.pref) lines.push("・連絡しやすい時間："+v.pref);
+    if (v.memo) lines.push("・メモ："+v.memo.replace(/\n/g,"\n　"));
+  }
+  return lines.join("\n");
+}
+function updateOutcomeText(){ const el = $("o-text"); if (el) el.textContent = outcomeText(); }
+async function saveOutcome(){
+  const u = ui.user; if (!u) return;
+  const v = outcomeVals();
+  const log = {id:"", u:{id:u.id, name:u.name, phone:u.phone}, type:ui.outcome, by:operator(), at:new Date().toISOString(), state:v.state, pref:v.pref, memo:v.memo};
+  if (ui.outcome==="再電話"){
+    if (!v.at){ toast("再電話の日時を入れてください。"); return; }
+    log.callbackAt = new Date(v.at).toISOString(); log.done = false;
+  }
+  try { await persistLog(log); } catch(e){ toast(errText(e)); return; }
+  if (log.type==="再電話") st.logs.forEach(l => { if (l.u && l.u.id===u.id && l.type==="再電話") l.done = true; });
+  st.logs.push(log);
+  toast((ui.outcome==="再電話" ? "再電話リストに登録しました" : "「"+ui.outcome+"」として記録しました") + "（全員に共有）");
+  ui.outcome = null; renderAll();
+}
+
+/* ---------- 再電話・Hub一覧・空き状況 ---------- */
+function renderRecall(){
+  const rows = st.logs.filter(l => l.type==="再電話" && !l.done && l.u).sort((a,b) => new Date(a.callbackAt)-new Date(b.callbackAt));
+  const now = new Date(), over = rows.filter(l => new Date(l.callbackAt) < now).length;
+  const cnt = $("recall-cnt"); cnt.hidden = !over; cnt.textContent = over;
+  $("recall-sub").textContent = rows.length+"件（時間を過ぎたもの "+over+"件）";
+  $("recall-body").innerHTML = rows.length ? rows.map(l => {
+    const t = new Date(l.callbackAt), diff = (t-now)/60000;
+    const cls = diff < 0 ? "over" : diff < 60 ? "soon" : "";
+    const state = diff < 0 ? '<span class="pill crit">'+Math.round(-diff)+'分超過</span>' : diff < 60 ? '<span class="pill warn">あと'+Math.round(diff)+'分</span>' : '<span class="pill">予定</span>';
+    return '<tr class="'+cls+'"><td class="mono">'+dayLabel(t)+' '+fmtT(t)+'</td><td>'+esc(l.u.name)+'</td><td class="mono">'+esc(fmtPhone(l.u.phone))+'</td><td class="memo">'+esc([l.state && l.state!=="本人と話せた" ? l.state : "", l.pref ? "希望："+l.pref : "", l.memo].filter(Boolean).join("／"))+'</td><td>'+esc(l.by)+'</td><td>'+state+'</td><td><button type="button" class="btn sm primary" data-call="'+esc(l.u.phone)+'">架電する</button></td></tr>';
+  }).join("") : '<tr><td colspan="7"><div class="empty">再電話の予定はありません。架電結果で「再電話」を記録するとここに並びます。</div></td></tr>';
+}
+function renderToss(){
+  const rows = st.drafts.slice().sort((a,b) => (a.tossed - b.tossed) || (new Date(a.start) - new Date(b.start)));
+  const pending = rows.filter(b => !b.tossed).length;
+  const c = $("toss-cnt"); c.hidden = !pending; c.textContent = pending;
+  $("toss-sub").textContent = "未トスアップ "+pending+"件／全"+rows.length+"件";
+  $("toss-body").innerHTML = rows.length ? rows.map(b => { const t = new Date(b.start), u = b.u || {name:"-", phone:""};
+    return '<tr><td class="mono">'+dayFull(t)+' '+fmtT(t)+'</td><td>'+esc(u.name)+'</td><td class="mono">'+esc(fmtPhone(u.phone))+'</td><td>'+esc(b.by)+((b.hubStatus||"draft")==="draft" ? ' <span class="pill warn">Hub未登録</span>' : '')+'</td><td>'+(b.tossed ? '<span class="pill ok">済 '+(b.tossedAt?fmtD(new Date(b.tossedAt))+' '+fmtT(new Date(b.tossedAt)):'')+'</span>' : '<span class="pill warn">未</span>')+'</td><td><button type="button" class="btn sm '+(b.tossed?'':'primary')+'" data-toss="'+esc(b.id)+'">'+(b.tossed?'見直す':'トスアップする')+'</button></td></tr>'; }).join("")
+    : '<tr><td colspan="6"><div class="empty">まだ予約はありません。「架電・予約」で予約すると、ここに並びます。</div></td></tr>';
+}
+function renderList(){
+  const body = $("list-body");
+  const drafts = st.drafts.filter(b => (b.hubStatus||"draft")==="draft").reverse().map(b => '<tr><td class="mono">'+fmtD(new Date(b.start))+' '+fmtT(new Date(b.start))+'</td><td>'+esc((b.u && b.u.name)||"（この画面で作成）")+'</td><td>'+esc(FORMS[b.method].label)+'</td><td>'+esc(b.staff||"-")+'</td><td>スイッチ（'+esc(b.by)+'）</td><td class="mono">'+HUB_TAG+'</td><td><span class="pill warn">Hub未登録</span></td></tr>').join("");
+  if (data.mode!=="live"){ body.innerHTML = drafts || '<tr><td colspan="7"><div class="empty">Supabaseにつながると、Hubに登録されているスイッチ経由の予約が表示されます。</div></td></tr>'; return; }
+  if (data.hubListErr){ body.innerHTML = drafts + '<tr><td colspan="7"><div class="empty">'+esc(data.hubListErr)+'</div></td></tr>'; return; }
+  if (!data.hubList){ body.innerHTML = drafts + '<tr><td colspan="7"><div class="empty">Hubから読み込み中…</div></td></tr>'; return; }
+  body.innerHTML = drafts + (data.hubList.length ? data.hubList.map(r => {
+    const t = new Date(r.start_at), lab = r.is_canceled ? "キャンセル" : (STATUS[r.status_id] || STATUS[String(r.status_id)] || ("状態"+r.status_id));
+    const cls = r.is_canceled ? "" : r.status_id===12 ? "ok" : r.status_id===13 ? "crit" : "acc";
+    return '<tr><td class="mono">'+fmtD(t)+' '+fmtT(t)+'</td><td>'+esc(r.booker_name)+'</td><td>'+(r.reminder_type_id===9?"オンライン面談":r.reminder_type_id===8?"電話":"-")+'</td><td>'+esc(r.staff||"-")+'</td><td>'+esc(r.getter||"-")+'</td><td class="mono">'+esc(r.tag||"")+'</td><td><span class="pill '+cls+'">'+esc(lab)+'</span></td></tr>';
+  }).join("") : '<tr><td colspan="7"><div class="empty">スイッチ経由の予約はまだありません。</div></td></tr>');
+}
+function renderHeat(){
+  const hours = []; for (let h=OPEN_H; h<CLOSE_H; h++) hours.push(h);
+  $("cap-sub").textContent = data.slotsAt ? "Hubの空き枠計算 "+fmtD(data.slotsAt)+" "+fmtT(data.slotsAt)+"時点" : "";
+  let html = '<div class="hd"></div>' + Array.from({length:DAYS},(_,d)=>'<div class="hd">'+dayLabel(at(d,0,0))+'<br>'+fmtD(at(d,0,0))+'</div>').join("");
+  hours.forEach(h => {
+    html += '<div class="rl">'+pad(h)+':00</div>';
+    for (let d=0; d<DAYS; d++){
+      const n = slotsOfDay(d).filter(t => t.getHours()===h).reduce((s,t) => s + capacity(t).n, 0);
+      const a = Math.min(1, n/8);
+      const bg = n===0 ? "var(--sunk)" : "color-mix(in srgb, var(--accent) "+Math.round(18+a*72)+"%, var(--surface))";
+      const fg = a > .5 ? "var(--accent-ink)" : n===0 ? "var(--muted)" : "var(--ink)";
+      html += '<button type="button" class="cell" style="border:0;cursor:pointer;background:'+bg+';color:'+fg+'" data-heat="'+d+'-'+h+'" aria-label="'+fmtD(at(d,0,0))+' '+h+'時 空き'+n+'">'+(n||"–")+'</button>';
+    }
+  });
+  const el = $("heat"); el.style.gridTemplateColumns = "52px repeat("+DAYS+", minmax(56px,1fr))"; el.style.minWidth = "480px"; el.innerHTML = html;
+}
+
+/* ---------- 共通 ---------- */
+function renderAll(){
+  renderHits(); renderVerify(); renderCal(); renderProposals(); renderHold(); renderFmt(); renderDone(); renderOutcome();
+  renderRecall(); renderToss(); renderList(); renderHeat();
+}
+function setView(v){
+  ui.view = v;
+  ["call","recall","toss","list","cap"].forEach(k => { $("view-"+k).hidden = k!==v; $("tab-"+k).setAttribute("aria-selected", String(k===v)); });
+  ls.set("view", v);
+}
+let toastT;
+function toast(m){ const el = $("toast"); el.textContent = m; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 3600); }
+function copyText(text, fromEl){
+  const ok = () => toast("コピーしました");
+  const fb = () => { const box = fromEl && fromEl.closest(".sms, .done, .pb"); const tgt = box && (box.querySelector("textarea") || box.querySelector("pre")); if (!tgt) return;
+    if (tgt.select) { tgt.focus(); tgt.select(); } else { const r = document.createRange(); r.selectNodeContents(tgt); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+    toast("本文を選択しました。Ctrl+C または長押しでコピーしてください"); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok).catch(fb); else fb();
+}
+
+document.querySelector(".tabs").addEventListener("click", e => { const b = e.target.closest("[data-view]"); if (b){ setView(b.dataset.view); if (b.dataset.view==="list" && data.mode==="live" && !data.hubList) loadHubList(); } });
+$("search").addEventListener("submit", e => { e.preventDefault(); search($("q").value); });
+$("fmt").addEventListener("submit", book);
+document.addEventListener("click", e => {
+  const t = e.target;
+  const q = t.closest("[data-q]"); if (q){ $("q").value = q.dataset.q; search(q.dataset.q); return; }
+  const hit = t.closest("[data-hit]"); if (hit){ pickUser(ui.hits[+hit.dataset.hit]); return; }
+  if (t.id==="v-ok"){ ui.confirmed = true; ui.mismatch = false; renderVerify(); renderFmt(); return; }
+  if (t.id==="v-ng"){ ui.mismatch = true; ui.confirmed = false; renderVerify(); renderFmt(); const r = $("mismatch-reason"); if (r) r.focus(); return; }
+  const bd = t.closest("[data-band]"); if (bd){ ui.band = bd.dataset.band; renderProposals(); return; }
+  const sv = t.closest("[data-sv]"); if (sv){ ui.slotView = sv.dataset.sv; ls.set("slotView", ui.slotView); renderCal(); return; }
+  const slot = t.closest("[data-t]"); if (slot && !slot.disabled){ selectSlot(+slot.dataset.t); return; }
+  const pick = t.closest("[data-pick]"); if (pick){ selectSlot(+pick.dataset.pick); return; }
+  if (t.id==="release"){ releaseHold("仮押さえを解除しました"); return; }
+  const m = t.closest("#method button"); if (m){ ui.method = m.dataset.v; renderFmt(); return; }
+  const o = t.closest("[data-o]"); if (o){ ui.outcome = ui.outcome===o.dataset.o ? null : o.dataset.o; renderOutcome(); return; }
+  if (t.id==="o-copy"){ copyText(outcomeText(), t); return; }
+  if (t.id==="o-save"){ saveOutcome(); return; }
+  if (t.id==="copy-done"){ copyText(ui.done.slack, t); return; }
+  if (t.id==="sms-copy"){ copyText(($("sms-text")||{}).value||"", t); return; }
+  if (t.id==="sms-send"){ toast("試作のため送信していません。本文と宛先を確認できました"); return; }
+  if (t.id==="logout"){ api("/api/logout", {method:"POST"}).finally(() => location.href = "/login"); return; }
+  if (t.id==="paste-btn"){ applyPaste(); return; }
+  if (t.id==="toss-cancel"){ closeToss(); return; }
+  const tb = t.closest("[data-toss]"); if (tb){ openToss(tb.dataset.toss); return; }
+  if (t.id==="next-call"){ ui.tossFor=null; ui.done=null; ui.user=null; ui.hits=[]; ui.q=""; ui.sms=null; $("q").value=""; resetVerify(); renderAll(); $("q").focus(); return; }
+  const call = t.closest("[data-call]"); if (call){ setView("call"); $("q").value = fmtPhone(call.dataset.call); search(call.dataset.call); return; }
+  const h = t.closest("[data-heat]"); if (h){ const [d,hr] = h.dataset.heat.split("-").map(Number); setView("call"); ui.slotView = "cal"; renderCal(); const el = document.querySelector('#cal [data-t="'+at(d,hr,0).getTime()+'"]'); if (el) el.scrollIntoView({block:"center", inline:"center"}); return; }
+  if (t.id==="ask-btn"){ askCheck(); return; }
+  if (t.id==="slots-reload"){ reloadSlots(); toast("空き枠を読み込み直しています"); return; }
+  if (t.id==="list-reload"){ loadHubList(); return; }
+  if (t.id==="line-url-save"){ const v = ($("line-url").value||"").trim(); if (v && !/^https:\/\//.test(v)){ toast("https:// から始まるURLを入れてください"); return; } st.lineUrl = v; persistSetting("line_add_url", v).then(sh => { renderConn(); renderHits(); renderVerify(); renderDone(); toast("友だち追加URLを保存しました"+(sh?"（全員に共有）":"")); }); return; }
+});
+document.addEventListener("input", e => {
+  const id = e.target.id;
+  if (id==="spoken" || id==="birthcheck" || id==="mismatch-reason"){
+    if (id==="spoken") ui.spoken = e.target.value; if (id==="birthcheck") ui.birthCheck = e.target.value; if (id==="mismatch-reason") ui.mismatchReason = e.target.value;
+    const pos = e.target.selectionStart; renderVerify(); const el = $(id); if (el){ el.focus(); try { el.setSelectionRange(pos,pos); } catch(_){} }
+    renderFmt(); return;
+  }
+  if (id==="cb-at" || id==="o-pref" || id==="o-memo"){ updateOutcomeText(); return; }
+  if (id==="sms-text"){ const n = [...e.target.value].length; const meta = e.target.parentNode.querySelector(".meta span:last-child"); if (meta) meta.textContent = n+"文字（"+(n<=70?1:Math.ceil(n/67))+"通分）"; return; }
+  if (id && id.startsWith("f-")) renderFmt();
+});
+document.addEventListener("change", e => { if (e.target.id==="f-med") renderFmt(); if (["o-state","o-memo-slack"].includes(e.target.id)) updateOutcomeText(); });
+
+/* 初期表示 */
+$("ask-at").value = toLocalInput(at(1,19,0));
+ui.slotView = ls.get("slotView","pick");
+setView(ls.get("view","call"));
+renderAll();
+boot();
+setInterval(() => { if (!document.hidden){ renderRecall(); if (!ui.hold){ renderCal(); renderProposals(); } } }, 60000);
+setInterval(() => { if (!document.hidden && data.mode==="live") reloadSlots(); }, 5*60000);
+setInterval(async () => {
+  if (document.hidden || store.mode!=="supabase") return;
+  try { await loadShared(); renderConn(); renderRecall(); renderToss(); renderList(); renderHeat(); renderProposals(); renderCal(); if (!ui.tossFor && !ui.done) renderHits(); }
+  catch(e){ /* 次回に再試行 */ }
+}, 30000);
+})();
+</script>
+</body>
+</html>
